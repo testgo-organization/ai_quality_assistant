@@ -1,4 +1,3 @@
-
 import React from "react";
 import { 
   BarChart, 
@@ -21,7 +20,7 @@ import {
 } from "recharts";
 
 interface ChartContainerProps {
-  children: React.ReactNode;
+  children: React.ReactElement;
   height?: number;
   className?: string;
 }
