@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,18 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// PIACC custom colors
+				piacc: {
+					blue: '#3B82F6',
+					purple: '#8B5CF6',
+					pink: '#EC4899',
+					darkblue: '#1E40AF',
+					lightblue: '#93C5FD',
+					green: '#10B981',
+					yellow: '#FBBF24',
+					red: '#EF4444',
+					gray: '#6B7280',
 				}
 			},
 			borderRadius: {
@@ -84,12 +97,73 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+				'float': {
+					'0%, 100%': { 
+						transform: 'translateY(0)' 
+					},
+					'50%': { 
+						transform: 'translateY(-10px)' 
+					},
+				},
+				'pulse-slow': {
+					'0%, 100%': {
+						opacity: '1'
+					},
+					'50%': {
+						opacity: '0.6'
+					}
+				},
+				'spin-slow': {
+					from: {
+						transform: 'rotate(0deg)'
+					},
+					to: {
+						transform: 'rotate(360deg)'
+					}
+				},
+				'fade-in': {
+					from: {
+						opacity: '0'
+					},
+					to: {
+						opacity: '1'
+					}
+				},
+				'fade-in-up': {
+					from: {
+						opacity: '0',
+						transform: 'translateY(20px)'
+					},
+					to: {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'bounce-slow': {
+					'0%, 100%': {
+						transform: 'translateY(0)',
+						animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)'
+					},
+					'50%': {
+						transform: 'translateY(-15px)',
+						animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)'
+					},
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'float': 'float 5s ease-in-out infinite',
+				'pulse-slow': 'pulse-slow 4s ease-in-out infinite',
+				'spin-slow': 'spin-slow 10s linear infinite',
+				'fade-in': 'fade-in 0.6s ease-out',
+				'fade-in-up': 'fade-in-up 0.8s ease-out',
+				'bounce-slow': 'bounce-slow 5s infinite'
+			},
+			fontFamily: {
+				'rubik': ['Rubik', 'sans-serif'],
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
