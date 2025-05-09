@@ -16,76 +16,37 @@ import {
   Heart,
   ThumbsUp,
   ThumbsDown,
-  Download,
-  Calendar
+  Calendar,
+  Clock,
+  Activity,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  getMockContactReasons,
+  getMockSentimentData,
+  getMockSatisfactionTrend,
+  getMockFrictionPoints,
+  getMockSatisfactionPoints,
+  getMockJourneyData,
+  getMockChannelUsage,
+  getMockHourlyDistribution
+} from "@/components/charts/utils";
 
 const Dashboard = () => {
   const [period, setPeriod] = useState("month");
   
-  // Datos mejorados para los motivos de contacto
-  const contactReasons = [
-    { name: "Consultas de Productos", value: 35 },
-    { name: "Soporte Técnico", value: 27 },
-    { name: "Quejas de Servicio", value: 18 },
-    { name: "Ventas y Cotizaciones", value: 15 },
-    { name: "Facturación", value: 8 },
-    { name: "Devoluciones", value: 5 },
-  ];
+  // Load mock data using our utility functions
+  const contactReasons = getMockContactReasons();
+  const sentimentData = getMockSentimentData();
+  const satisfactionTrend = getMockSatisfactionTrend();
+  const frictionPoints = getMockFrictionPoints();
+  const satisfactionPoints = getMockSatisfactionPoints();
+  const journeyData = getMockJourneyData();
+  const channelUsage = getMockChannelUsage();
+  const hourlyDistribution = getMockHourlyDistribution();
   
-  // Datos mejorados para el análisis de sentimientos
-  const sentimentData = [
-    { name: "Positivo", value: 42 },
-    { name: "Neutral", value: 38 },
-    { name: "Negativo", value: 20 },
-  ];
-  
-  // Datos mejorados de tendencia de satisfacción con 12 meses
-  const satisfactionTrend = [
-    { name: "Ene", csat: 72, nps: 63 },
-    { name: "Feb", csat: 75, nps: 65 },
-    { name: "Mar", csat: 73, nps: 62 },
-    { name: "Abr", csat: 78, nps: 67 },
-    { name: "May", csat: 82, nps: 70 },
-    { name: "Jun", csat: 85, nps: 72 },
-    { name: "Jul", csat: 87, nps: 76 },
-    { name: "Ago", csat: 88, nps: 78 },
-    { name: "Sep", csat: 86, nps: 77 },
-    { name: "Oct", csat: 90, nps: 80 },
-    { name: "Nov", csat: 92, nps: 83 },
-    { name: "Dic", csat: 95, nps: 87 },
-  ];
-  
-  // Datos mejorados para los puntos de fricción
-  const frictionPoints = [
-    { name: "Tiempos de espera prolongados", value: 38 },
-    { name: "Procesos complejos", value: 27 },
-    { name: "Falta de información clara", value: 16 },
-    { name: "Problemas técnicos recurrentes", value: 12 },
-    { name: "Discrepancias en facturación", value: 7 },
-  ];
-  
-  // Datos mejorados para los puntos de satisfacción
-  const satisfactionPoints = [
-    { name: "Atención personalizada", value: 32 },
-    { name: "Resolución rápida de problemas", value: 28 },
-    { name: "Amabilidad y empatía", value: 20 },
-    { name: "Conocimiento técnico del agente", value: 15 },
-    { name: "Seguimiento posterior", value: 5 },
-  ];
-
-  // Datos mejorados para el journey del cliente
-  const journeyData = [
-    { subject: 'Primer contacto', actual: 85, esperado: 90, diferencia: -5 },
-    { subject: 'Identificación', actual: 78, esperado: 85, diferencia: -7 },
-    { subject: 'Diagnóstico', actual: 70, esperado: 82, diferencia: -12 },
-    { subject: 'Resolución', actual: 75, esperado: 88, diferencia: -13 },
-    { subject: 'Seguimiento', actual: 60, esperado: 80, diferencia: -20 },
-    { subject: 'Cierre', actual: 80, esperado: 92, diferencia: -12 },
-  ];
-
   return (
     <div className="min-h-screen pt-20 pb-10 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-slate-900/50">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -111,7 +72,7 @@ const Dashboard = () => {
             </div>
             
             <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <Download size={14} />
+              <Calendar size={14} />
               <span>Exportar</span>
             </Button>
           </div>
@@ -124,24 +85,28 @@ const Dashboard = () => {
             value="3,842"
             trend={{ value: 14.3, isPositive: true }}
             icon={<MessageSquare size={18} />}
+            subtitle="Total de contactos recibidos en todos los canales"
           />
           <DashboardCard 
             title="CSAT Promedio"
             value="87%"
             trend={{ value: 5.2, isPositive: true }}
             icon={<ThumbsUp size={18} />}
+            subtitle="Satisfacción del cliente en encuestas post-servicio"
           />
           <DashboardCard 
             title="NPS"
             value="76"
             trend={{ value: 8.3, isPositive: true }}
             icon={<TrendingUp size={18} />}
+            subtitle="Net Promoter Score actual con base en feedback"
           />
           <DashboardCard 
             title="Tasa de Resolución"
             value="94%"
             trend={{ value: 2.8, isPositive: true }}
             icon={<Heart size={18} />}
+            subtitle="Porcentaje de casos resueltos en primer contacto"
           />
         </div>
         
@@ -174,14 +139,15 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 gap-6">
           <DashboardCard 
             title="Tendencia de Satisfacción"
-            icon={<Calendar size={18} />}
+            icon={<Activity size={18} />}
             subtitle="Evolución mensual de los índices de satisfacción y recomendación"
           >
             <SimpleLineChart 
               data={satisfactionTrend} 
               lines={[
-                { dataKey: "csat", color: "#3B82F6" },
-                { dataKey: "nps", color: "#8B5CF6" }
+                { dataKey: "csat", color: "#8B5CF6" },
+                { dataKey: "nps", color: "#3B82F6" },
+                { dataKey: "responses", color: "#D1D5DB" }
               ]}
               height={300}
               showLegend={true}
@@ -199,7 +165,7 @@ const Dashboard = () => {
             <SimpleBarChart 
               data={frictionPoints} 
               height={250} 
-              colors={["#EF4444", "#F87171", "#FECACA", "#FEE2E2", "#FDA4AF"]} 
+              colors={["#F87171", "#FECACA", "#FEE2E2", "#FDA4AF", "#EF4444"]} 
             />
           </DashboardCard>
           
@@ -216,10 +182,41 @@ const Dashboard = () => {
           </DashboardCard>
         </div>
         
+        {/* New charts section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <DashboardCard 
+            title="Uso por Canal"
+            icon={<PieChart size={18} />}
+            subtitle="Distribución de interacciones por canal de contacto"
+          >
+            <SimplePieChart 
+              data={channelUsage} 
+              height={250}
+              colors={channelUsage.map(item => item.color)}
+              innerRadius={0}
+              outerRadius={90}
+            />
+          </DashboardCard>
+          
+          <DashboardCard 
+            title="Distribución Horaria"
+            icon={<Clock size={18} />}
+            subtitle="Volumen de contactos recibidos por hora del día"
+          >
+            <SimpleBarChart 
+              data={hourlyDistribution} 
+              height={250}
+              colors={["#9b87f5"]} 
+              showXAxis={true}
+              showYAxis={true}
+            />
+          </DashboardCard>
+        </div>
+        
         {/* Customer Journey */}
         <DashboardCard 
           title="Journey del Cliente"
-          icon={<Users size={18} />}
+          icon={<Info size={18} />}
           subtitle="Análisis de satisfacción en cada etapa del recorrido del cliente"
         >
           <Tabs defaultValue="radar" className="w-full">
@@ -232,8 +229,8 @@ const Dashboard = () => {
               <SimpleRadarChart 
                 data={journeyData}
                 dataKeys={[
-                  { key: "actual", color: "#3B82F6" },
-                  { key: "esperado", color: "#8B5CF6" }
+                  { key: "actual", color: "#8B5CF6" },
+                  { key: "esperado", color: "#3B82F6" }
                 ]}
                 height={350}
               />
@@ -245,10 +242,12 @@ const Dashboard = () => {
                   actual: item.actual,
                   esperado: item.esperado
                 }))}
-                colors={["#3B82F6", "#8B5CF6"]}
+                colors={["#8B5CF6", "#3B82F6"]}
                 dataKey="actual"
                 height={350}
                 showLegend={true}
+                showXAxis={true}
+                showYAxis={true}
               />
             </TabsContent>
             <TabsContent value="description">
@@ -285,11 +284,11 @@ const Dashboard = () => {
                 </div>
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full bg-piacc-blue mr-2"></div>
+                    <div className="w-3 h-3 rounded-full bg-[#8B5CF6] mr-2"></div>
                     <span>Nivel actual</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full bg-piacc-purple mr-2"></div>
+                    <div className="w-3 h-3 rounded-full bg-[#3B82F6] mr-2"></div>
                     <span>Nivel esperado</span>
                   </div>
                 </div>
