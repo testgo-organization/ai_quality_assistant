@@ -42,7 +42,6 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
 interface SimpleBarChartProps {
   data: Array<{
     name: string;
-    value: number;
     [key: string]: any;
   }>;
   colors?: string[];

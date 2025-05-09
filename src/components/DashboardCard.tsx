@@ -15,6 +15,7 @@ interface DashboardCardProps {
   className?: string;
   loading?: boolean;
   footer?: ReactNode;
+  subtitle?: string;
 }
 
 const DashboardCard: React.FC<DashboardCardProps> = ({
@@ -26,6 +27,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   className,
   loading = false,
   footer,
+  subtitle,
 }) => {
   return (
     <Card className={cn("overflow-hidden glass-card", className)}>
@@ -34,6 +36,10 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
           {icon && <div className="text-gray-400 dark:text-gray-500">{icon}</div>}
         </div>
+        
+        {subtitle && (
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{subtitle}</p>
+        )}
         
         {loading ? (
           <div className="space-y-2">
