@@ -6,7 +6,7 @@ import {
   SimplePieChart, 
   SimpleLineChart,
   SimpleRadarChart 
-} from "@/components/ChartComponents";
+} from "@/components/charts";
 import { 
   BarChart3, 
   PieChart, 
