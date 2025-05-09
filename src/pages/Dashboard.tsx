@@ -25,49 +25,65 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const Dashboard = () => {
   const [period, setPeriod] = useState("month");
   
+  // Datos mejorados para los motivos de contacto
   const contactReasons = [
-    { name: "Consultas", value: 35 },
-    { name: "Soporte", value: 25 },
-    { name: "Quejas", value: 15 },
-    { name: "Ventas", value: 20 },
-    { name: "Otros", value: 5 },
+    { name: "Consultas de Productos", value: 35 },
+    { name: "Soporte Técnico", value: 27 },
+    { name: "Quejas de Servicio", value: 18 },
+    { name: "Ventas y Cotizaciones", value: 15 },
+    { name: "Facturación", value: 8 },
+    { name: "Devoluciones", value: 5 },
   ];
   
+  // Datos mejorados para el análisis de sentimientos
   const sentimentData = [
-    { name: "Positivo", value: 45 },
-    { name: "Neutral", value: 35 },
+    { name: "Positivo", value: 42 },
+    { name: "Neutral", value: 38 },
     { name: "Negativo", value: 20 },
   ];
   
+  // Datos mejorados de tendencia de satisfacción con 12 meses
   const satisfactionTrend = [
-    { name: "Ene", csat: 75, nps: 65 },
-    { name: "Feb", csat: 78, nps: 68 },
+    { name: "Ene", csat: 72, nps: 63 },
+    { name: "Feb", csat: 75, nps: 65 },
     { name: "Mar", csat: 73, nps: 62 },
-    { name: "Abr", csat: 82, nps: 70 },
-    { name: "May", csat: 85, nps: 75 },
-    { name: "Jun", csat: 87, nps: 78 },
+    { name: "Abr", csat: 78, nps: 67 },
+    { name: "May", csat: 82, nps: 70 },
+    { name: "Jun", csat: 85, nps: 72 },
+    { name: "Jul", csat: 87, nps: 76 },
+    { name: "Ago", csat: 88, nps: 78 },
+    { name: "Sep", csat: 86, nps: 77 },
+    { name: "Oct", csat: 90, nps: 80 },
+    { name: "Nov", csat: 92, nps: 83 },
+    { name: "Dic", csat: 95, nps: 87 },
   ];
   
+  // Datos mejorados para los puntos de fricción
   const frictionPoints = [
-    { name: "Tiempo de espera", value: 45 },
-    { name: "Procesos complejos", value: 30 },
-    { name: "Falta de información", value: 15 },
-    { name: "Problemas técnicos", value: 10 },
+    { name: "Tiempos de espera prolongados", value: 38 },
+    { name: "Procesos complejos", value: 27 },
+    { name: "Falta de información clara", value: 16 },
+    { name: "Problemas técnicos recurrentes", value: 12 },
+    { name: "Discrepancias en facturación", value: 7 },
   ];
   
+  // Datos mejorados para los puntos de satisfacción
   const satisfactionPoints = [
-    { name: "Atención personalizada", value: 40 },
-    { name: "Resolución rápida", value: 30 },
-    { name: "Amabilidad", value: 20 },
-    { name: "Conocimiento técnico", value: 10 },
+    { name: "Atención personalizada", value: 32 },
+    { name: "Resolución rápida de problemas", value: 28 },
+    { name: "Amabilidad y empatía", value: 20 },
+    { name: "Conocimiento técnico del agente", value: 15 },
+    { name: "Seguimiento posterior", value: 5 },
   ];
 
+  // Datos mejorados para el journey del cliente
   const journeyData = [
-    { subject: 'Primer contacto', actual: 85, esperado: 90 },
-    { subject: 'Diagnóstico', actual: 70, esperado: 80 },
-    { subject: 'Resolución', actual: 75, esperado: 85 },
-    { subject: 'Seguimiento', actual: 60, esperado: 75 },
-    { subject: 'Cierre', actual: 80, esperado: 90 },
+    { subject: 'Primer contacto', actual: 85, esperado: 90, diferencia: -5 },
+    { subject: 'Identificación', actual: 78, esperado: 85, diferencia: -7 },
+    { subject: 'Diagnóstico', actual: 70, esperado: 82, diferencia: -12 },
+    { subject: 'Resolución', actual: 75, esperado: 88, diferencia: -13 },
+    { subject: 'Seguimiento', actual: 60, esperado: 80, diferencia: -20 },
+    { subject: 'Cierre', actual: 80, esperado: 92, diferencia: -12 },
   ];
 
   return (
@@ -105,26 +121,26 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <DashboardCard 
             title="Total Interacciones"
-            value="2,547"
-            trend={{ value: 12.5, isPositive: true }}
+            value="3,842"
+            trend={{ value: 14.3, isPositive: true }}
             icon={<MessageSquare size={18} />}
           />
           <DashboardCard 
             title="CSAT Promedio"
-            value="85%"
-            trend={{ value: 3.2, isPositive: true }}
+            value="87%"
+            trend={{ value: 5.2, isPositive: true }}
             icon={<ThumbsUp size={18} />}
           />
           <DashboardCard 
             title="NPS"
-            value="72"
-            trend={{ value: 5.7, isPositive: true }}
+            value="76"
+            trend={{ value: 8.3, isPositive: true }}
             icon={<TrendingUp size={18} />}
           />
           <DashboardCard 
             title="Tasa de Resolución"
-            value="93%"
-            trend={{ value: 2.1, isPositive: true }}
+            value="94%"
+            trend={{ value: 2.8, isPositive: true }}
             icon={<Heart size={18} />}
           />
         </div>
@@ -134,6 +150,7 @@ const Dashboard = () => {
           <DashboardCard 
             title="Motivos de Contacto"
             icon={<PieChart size={18} />}
+            subtitle="Distribución porcentual de los principales motivos de contacto"
           >
             <SimpleBarChart data={contactReasons} height={250} />
           </DashboardCard>
@@ -141,6 +158,7 @@ const Dashboard = () => {
           <DashboardCard 
             title="Análisis de Sentimientos"
             icon={<Users size={18} />}
+            subtitle="Distribución de emociones detectadas en las interacciones"
           >
             <SimplePieChart 
               data={sentimentData} 
@@ -157,6 +175,7 @@ const Dashboard = () => {
           <DashboardCard 
             title="Tendencia de Satisfacción"
             icon={<Calendar size={18} />}
+            subtitle="Evolución mensual de los índices de satisfacción y recomendación"
           >
             <SimpleLineChart 
               data={satisfactionTrend} 
@@ -175,22 +194,24 @@ const Dashboard = () => {
           <DashboardCard 
             title="Puntos de Fricción"
             icon={<ThumbsDown size={18} />}
+            subtitle="Principales causas de insatisfacción identificadas"
           >
             <SimpleBarChart 
               data={frictionPoints} 
               height={250} 
-              colors={["#EF4444", "#F87171", "#FECACA", "#FEE2E2"]} 
+              colors={["#EF4444", "#F87171", "#FECACA", "#FEE2E2", "#FDA4AF"]} 
             />
           </DashboardCard>
           
           <DashboardCard 
             title="Puntos de Satisfacción"
             icon={<ThumbsUp size={18} />}
+            subtitle="Aspectos mejor valorados por los clientes"
           >
             <SimpleBarChart 
               data={satisfactionPoints} 
               height={250} 
-              colors={["#10B981", "#34D399", "#6EE7B7", "#D1FAE5"]}
+              colors={["#10B981", "#34D399", "#6EE7B7", "#D1FAE5", "#A7F3D0"]}
             />
           </DashboardCard>
         </div>
@@ -199,11 +220,13 @@ const Dashboard = () => {
         <DashboardCard 
           title="Journey del Cliente"
           icon={<Users size={18} />}
+          subtitle="Análisis de satisfacción en cada etapa del recorrido del cliente"
         >
           <Tabs defaultValue="radar" className="w-full">
             <TabsList className="mb-4">
-              <TabsTrigger value="radar">Radar</TabsTrigger>
-              <TabsTrigger value="description">Descripción</TabsTrigger>
+              <TabsTrigger value="radar">Vista Radar</TabsTrigger>
+              <TabsTrigger value="bar">Vista Barras</TabsTrigger>
+              <TabsTrigger value="description">Detalles</TabsTrigger>
             </TabsList>
             <TabsContent value="radar">
               <SimpleRadarChart 
@@ -215,6 +238,19 @@ const Dashboard = () => {
                 height={350}
               />
             </TabsContent>
+            <TabsContent value="bar">
+              <SimpleBarChart 
+                data={journeyData.map(item => ({
+                  name: item.subject,
+                  actual: item.actual,
+                  esperado: item.esperado
+                }))}
+                colors={["#3B82F6", "#8B5CF6"]}
+                dataKey="actual"
+                height={350}
+                showLegend={true}
+              />
+            </TabsContent>
             <TabsContent value="description">
               <div className="p-4 space-y-4">
                 <h3 className="font-medium text-lg">Análisis del Journey del Cliente</h3>
@@ -223,7 +259,31 @@ const Dashboard = () => {
                   en cada etapa del recorrido del cliente. Las principales áreas de mejora se encuentran 
                   en las fases de diagnóstico y seguimiento.
                 </p>
-                <div className="space-y-2">
+                <div className="mt-4">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead>
+                      <tr>
+                        <th className="text-left py-2 px-4 bg-gray-50 dark:bg-gray-800">Etapa</th>
+                        <th className="text-center py-2 px-4 bg-gray-50 dark:bg-gray-800">Actual</th>
+                        <th className="text-center py-2 px-4 bg-gray-50 dark:bg-gray-800">Esperado</th>
+                        <th className="text-center py-2 px-4 bg-gray-50 dark:bg-gray-800">Diferencia</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {journeyData.map((item, index) => (
+                        <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800/50'}>
+                          <td className="py-2 px-4">{item.subject}</td>
+                          <td className="py-2 px-4 text-center">{item.actual}%</td>
+                          <td className="py-2 px-4 text-center">{item.esperado}%</td>
+                          <td className={`py-2 px-4 text-center ${item.diferencia >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                            {item.diferencia > 0 ? `+${item.diferencia}` : item.diferencia}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-4 space-y-2">
                   <div className="flex items-center">
                     <div className="w-3 h-3 rounded-full bg-piacc-blue mr-2"></div>
                     <span>Nivel actual</span>
@@ -232,6 +292,14 @@ const Dashboard = () => {
                     <div className="w-3 h-3 rounded-full bg-piacc-purple mr-2"></div>
                     <span>Nivel esperado</span>
                   </div>
+                </div>
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <h4 className="font-medium text-blue-800 dark:text-blue-300">Recomendaciones</h4>
+                  <ul className="mt-2 list-disc pl-5 text-gray-700 dark:text-gray-300 space-y-1">
+                    <li>Optimizar el proceso de seguimiento con alertas automatizadas</li>
+                    <li>Mejorar la fase de diagnóstico con herramientas de IA predictiva</li>
+                    <li>Implementar check-points adicionales en las etapas con mayores brechas</li>
+                  </ul>
                 </div>
               </div>
             </TabsContent>
