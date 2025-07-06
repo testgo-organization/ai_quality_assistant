@@ -137,14 +137,14 @@ const Upload = () => {
         
         {/* Upload Area */}
         <div 
-          className={`glass-card p-8 border-2 border-dashed ${isDragging ? 'border-piacc-blue bg-piacc-blue/5' : 'border-gray-300 dark:border-gray-700'} rounded-lg flex flex-col items-center justify-center gap-4 transition-all cursor-pointer`}
+          className={`glass-card p-8 border-2 border-dashed ${isDragging ? 'border-tetgoai-blue bg-tetgoai-blue/5' : 'border-gray-300 dark:border-gray-700'} rounded-lg flex flex-col items-center justify-center gap-4 transition-all cursor-pointer`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => document.getElementById('file-upload')?.click()}
         >
-          <div className="h-16 w-16 rounded-full bg-piacc-blue/10 flex items-center justify-center animate-pulse-slow">
-            <UploadIcon className="h-8 w-8 text-piacc-blue" />
+          <div className="h-16 w-16 rounded-full bg-tetgoai-blue/10 flex items-center justify-center animate-pulse-slow">
+            <UploadIcon className="h-8 w-8 text-tetgoai-blue" />
           </div>
           
           <div className="text-center">
@@ -152,7 +152,7 @@ const Upload = () => {
               {isDragging ? 'Suelta los archivos aquí' : 'Arrastra y suelta archivos aquí'}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              o <span className="text-piacc-blue">haz clic para seleccionar</span>
+              o <span className="text-tetgoai-blue">haz clic para seleccionar</span>
             </p>
           </div>
           
@@ -208,7 +208,7 @@ const Upload = () => {
                       <div className="w-24">
                         <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-piacc-blue rounded-full transition-all duration-300"
+                            className="h-full bg-tetgoai-blue rounded-full transition-all duration-300"
                             style={{ width: `${uploadProgress[file.name] || 0}%` }}
                           ></div>
                         </div>
@@ -233,7 +233,7 @@ const Upload = () => {
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50">
               <Button 
                 onClick={simulateUpload} 
-                className="w-full bg-gradient-to-r from-piacc-blue to-piacc-purple hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                 disabled={processing}
               >
                 {processing ? (
@@ -259,7 +259,7 @@ const Upload = () => {
         <div className="glass-card p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-              <AlertCircle size={16} className="text-piacc-blue" />
+              <AlertCircle size={16} className="text-tetgoai-blue" />
             </div>
             <h3 className="font-medium">Instrucciones</h3>
           </div>

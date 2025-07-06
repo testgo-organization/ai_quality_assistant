@@ -98,7 +98,7 @@
 }
 
 .gradient-text {
-  @apply bg-gradient-to-r from-piacc-blue via-piacc-purple to-piacc-pink text-transparent bg-clip-text;
+  @apply bg-gradient-to-r from-tetgoai-blue via-tetgoai-purple to-tetgoai-pink text-transparent bg-clip-text;
 }
 
 .animated-bg-element {

@@ -30,10 +30,10 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex-shrink-0 flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-piacc-blue to-piacc-purple flex items-center justify-center text-white font-bold">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple flex items-center justify-center text-white font-bold">
                 P
               </div>
-              <span className="text-xl font-bold gradient-text">PIACC</span>
+              <span className="text-xl font-bold gradient-text">TestGoAi</span>
             </Link>
           </div>
           
@@ -42,13 +42,13 @@ const Navbar = () => {
               <Link
                 key={item.name}
                 to={item.path}
-                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-piacc-blue hover:bg-gray-100/50 dark:text-gray-200 dark:hover:bg-gray-800/50 transition-colors flex items-center gap-2"
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-tetgoai-blue hover:bg-gray-100/50 dark:text-gray-200 dark:hover:bg-gray-800/50 transition-colors flex items-center gap-2"
               >
                 <item.icon size={16} />
                 <span>{item.name}</span>
               </Link>
             ))}
-            <Button size="sm" className="ml-4 bg-gradient-to-r from-piacc-blue to-piacc-purple">
+            <Button size="sm" className="ml-4 bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple">
               Iniciar Sesión
             </Button>
           </div>
@@ -72,14 +72,14 @@ const Navbar = () => {
             <Link
               key={item.name}
               to={item.path}
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-piacc-blue hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tetgoai-blue hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
               onClick={() => setIsOpen(false)}
             >
               <item.icon size={16} />
               <span>{item.name}</span>
             </Link>
           ))}
-          <Button size="sm" className="w-full mt-2 bg-gradient-to-r from-piacc-blue to-piacc-purple">
+          <Button size="sm" className="w-full mt-2 bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple">
             Iniciar Sesión
           </Button>
         </div>

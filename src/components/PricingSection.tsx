@@ -89,13 +89,13 @@ const PricingSection = () => {
               key={plan.name} 
               className={`flex flex-col h-full border-2 transition-transform hover:-translate-y-1 ${
                 plan.isPopular 
-                  ? "border-piacc-blue shadow-lg dark:border-piacc-blue shadow-piacc-blue/20" 
+                  ? "border-tetgoai-blue shadow-lg dark:border-tetgoai-blue shadow-tetgoai-blue/20" 
                   : "border-gray-200 dark:border-gray-700"
               }`}
             >
               <CardHeader className="text-center pb-0">
                 {plan.isPopular && (
-                  <div className="bg-piacc-blue text-white py-1 px-3 rounded-full text-sm font-medium mx-auto mb-4 inline-block">
+                  <div className="bg-tetgoai-blue text-white py-1 px-3 rounded-full text-sm font-medium mx-auto mb-4 inline-block">
                     Más popular
                   </div>
                 )}
@@ -120,7 +120,7 @@ const PricingSection = () => {
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
                       {feature.included ? (
-                        <Check className="h-5 w-5 text-piacc-green mr-2 shrink-0" />
+                        <Check className="h-5 w-5 text-tetgoai-green mr-2 shrink-0" />
                       ) : (
                         <X className="h-5 w-5 text-gray-400 mr-2 shrink-0" />
                       )}
@@ -136,10 +136,10 @@ const PricingSection = () => {
                   asChild 
                   className={`w-full ${
                     plan.isPopular 
-                      ? "bg-gradient-to-r from-piacc-blue to-piacc-purple" 
+                      ? "bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple" 
                       : plan.price === "Gratis"
                         ? "bg-gray-800 dark:bg-gray-200 dark:text-gray-800"
-                        : "bg-piacc-blue"
+                        : "bg-tetgoai-blue"
                   }`}
                   size="lg"
                 >
@@ -159,8 +159,8 @@ const PricingSection = () => {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-piacc-blue/10 dark:bg-piacc-blue/20 flex items-center justify-center mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-piacc-blue">
+              <div className="w-10 h-10 rounded-full bg-tetgoai-blue/10 dark:bg-tetgoai-blue/20 flex items-center justify-center mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-tetgoai-blue">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
                 </svg>
               </div>
@@ -170,14 +170,14 @@ const PricingSection = () => {
               </div>
             </div>
             <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-piacc-green/10 dark:bg-piacc-green/20 flex items-center justify-center mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-piacc-green">
+              <div className="w-10 h-10 rounded-full bg-tetgoai-green/10 dark:bg-tetgoai-green/20 flex items-center justify-center mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-tetgoai-green">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                 </svg>
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Escríbenos</p>
-                <p className="font-medium">contacto@piacc.com</p>
+                <p className="font-medium">contacto@tetgoai.com</p>
               </div>
             </div>
           </div>

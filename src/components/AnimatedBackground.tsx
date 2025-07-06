@@ -3,13 +3,13 @@ import React from "react";
 import { BarChart3, PieChart, TrendingUp, Heart, LineChart, Smile, ThumbsUp } from "lucide-react";
 
 const icons = [
-  { Component: BarChart3, className: "text-piacc-blue animate-float" },
-  { Component: PieChart, className: "text-piacc-purple animate-pulse-slow" },
-  { Component: TrendingUp, className: "text-piacc-green animate-bounce-slow" },
-  { Component: Heart, className: "text-piacc-pink animate-pulse-slow" },
-  { Component: LineChart, className: "text-piacc-blue animate-float" },
-  { Component: Smile, className: "text-piacc-yellow animate-pulse-slow" },
-  { Component: ThumbsUp, className: "text-piacc-green animate-bounce-slow" },
+  { Component: BarChart3, className: "text-tetgoai-blue animate-float" },
+  { Component: PieChart, className: "text-tetgoai-purple animate-pulse-slow" },
+  { Component: TrendingUp, className: "text-tetgoai-green animate-bounce-slow" },
+  { Component: Heart, className: "text-tetgoai-pink animate-pulse-slow" },
+  { Component: LineChart, className: "text-tetgoai-blue animate-float" },
+  { Component: Smile, className: "text-tetgoai-yellow animate-pulse-slow" },
+  { Component: ThumbsUp, className: "text-tetgoai-green animate-bounce-slow" },
 ];
 
 const digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "%"];

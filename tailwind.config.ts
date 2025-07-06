@@ -63,8 +63,8 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// PIACC custom colors
-				piacc: {
+				// TestGoAi custom colors
+				tetgoai: {
 					blue: '#3B82F6',
 					purple: '#8B5CF6',
 					pink: '#EC4899',
