@@ -10,10 +10,22 @@ import {
   TrendingUp, 
   ChevronRight 
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import PricingSection from "@/components/PricingSection";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
+  const { isAuthenticated, openAuthModal } = useAuth();
+  const navigate = useNavigate();
+
+  const handleProtectedNav = (path: string) => {
+    if (isAuthenticated) {
+      navigate(path);
+    } else {
+      openAuthModal();
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <AnimatedBackground />
@@ -36,18 +48,14 @@ const Index = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple hover:opacity-90 transition-opacity">
-              <Link to="/upload" className="flex items-center gap-2">
-                <Upload size={18} />
-                <span>Subir Archivos</span>
-              </Link>
+            <Button onClick={() => handleProtectedNav('/upload')} size="lg" className="bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple hover:opacity-90 transition-opacity flex items-center gap-2">
+              <Upload size={18} />
+              <span>Subir Archivos</span>
             </Button>
             
-            <Button asChild size="lg" variant="outline" className="border-2 border-tetgoai-blue hover:bg-tetgoai-blue/5">
-              <Link to="/dashboard" className="flex items-center gap-2">
-                <BarChart3 size={18} />
-                <span>Ver Dashboard</span>
-              </Link>
+            <Button onClick={() => navigate('/dashboard')} size="lg" variant="outline" className="border-2 border-tetgoai-blue hover:bg-tetgoai-blue/5 flex items-center gap-2">
+              <BarChart3 size={18} />
+              <span>Ver Dashboard</span>
             </Button>
           </div>
         </div>
@@ -103,11 +111,9 @@ const Index = () => {
               <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
                 Carga tus archivos de texto o audio y obtén insights valiosos sobre las conversaciones con tus clientes.
               </p>
-              <Button asChild size="lg" className="bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple hover:opacity-90 transition-opacity">
-                <Link to="/upload" className="flex items-center gap-2">
-                  <span>Comenzar ahora</span>
-                  <ChevronRight size={16} />
-                </Link>
+              <Button onClick={() => handleProtectedNav('/upload')} size="lg" className="bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple hover:opacity-90 transition-opacity flex items-center gap-2">
+                <span>Comenzar ahora</span>
+                <ChevronRight size={16} />
               </Button>
             </div>
             

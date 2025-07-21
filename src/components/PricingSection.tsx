@@ -2,8 +2,9 @@
 import React from "react";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PlanFeature {
   name: string;
@@ -35,7 +36,7 @@ const plans: PricingPlan[] = [
       { name: "Soporte 24/7", included: false },
     ],
     ctaText: "Comenzar gratis",
-    ctaLink: "/register"
+    ctaLink: "/upload"
   },
   {
     name: "Profesional",
@@ -73,6 +74,20 @@ const plans: PricingPlan[] = [
 ];
 
 const PricingSection = () => {
+  const { isAuthenticated, openAuthModal } = useAuth();
+  const navigate = useNavigate();
+
+  const handlePlanClick = (plan: PricingPlan) => {
+    if (plan.name === "Explorador") {
+      if (isAuthenticated) {
+        navigate('/upload');
+      } else {
+        openAuthModal();
+      }
+    }
+    // Los otros planes no tienen acción por ahora
+  };
+
   return (
     <div className="relative py-16 px-4 sm:px-6 lg:px-8 bg-white/60 dark:bg-slate-900/60 z-10">
       <div className="max-w-7xl mx-auto">
@@ -133,7 +148,7 @@ const PricingSection = () => {
               </CardContent>
               <CardFooter className="pt-6">
                 <Button 
-                  asChild 
+                  onClick={() => handlePlanClick(plan)}
                   className={`w-full ${
                     plan.isPopular 
                       ? "bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple" 
@@ -143,9 +158,7 @@ const PricingSection = () => {
                   }`}
                   size="lg"
                 >
-                  <Link to={plan.ctaLink}>
-                    {plan.ctaText}
-                  </Link>
+                  {plan.ctaText}
                 </Button>
               </CardFooter>
             </Card>
