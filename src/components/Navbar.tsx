@@ -79,9 +79,9 @@ const Navbar = () => {
               // Marcar dashboard-demo como activo si corresponde
               const isActive = (item.path === '/dashboard' && activePath === '/dashboard-demo') || activePath === item.path;
               return (
-                <a
+                <Link
                   key={item.name}
-                  href={item.path}
+                  to={item.path}
                   onClick={(e) => handleNavClick(e, item.path, item.requiresAuth)}
                   className={cn(
                     "px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 cursor-pointer transition-colors",
@@ -92,7 +92,7 @@ const Navbar = () => {
                 >
                   <item.icon size={16} />
                   <span>{item.name}</span>
-                </a>
+                </Link>
               );
             })}
             {isAuthenticated ? (
