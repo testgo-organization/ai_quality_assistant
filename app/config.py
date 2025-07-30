@@ -8,8 +8,8 @@ load_dotenv()
 # Configuración de la aplicación
 class Settings:
     # OpenAI
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    ASSISTANT_ID: str = os.getenv("ASSISTANT_ID", "asst_MhtIYnV2GIIGf2DK2")
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
+    ASSISTANT_ID: str = os.getenv("ASSISTANT_ID")
     
     # Servidor
     HOST: str = os.getenv("HOST", "0.0.0.0")
