@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardCard from '../components/DashboardCard';
@@ -50,9 +50,21 @@ const DashboardDetail = () => {
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const taskRef = useRef<Task | null>(null);
+  const globalTasksRef = useRef<{task_id: string; filename: string; status?: string}[]>([]);
   
   // Acceder al store global de tareas
   const { tasks: globalTasks } = useTaskStore();
+
+  // Actualizar refs cuando cambien los valores
+  useEffect(() => {
+    taskRef.current = task;
+  }, [task]);
+
+  useEffect(() => {
+    globalTasksRef.current = globalTasks;
+  }, [globalTasks]);
 
   const fetchTask = useCallback(async () => {
     if (!taskId) return;
@@ -88,18 +100,25 @@ const DashboardDetail = () => {
   useEffect(() => {
     if (!taskId) return;
 
-    const interval = setInterval(async () => {
+    // Limpiar intervalo anterior si existe
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    intervalRef.current = setInterval(async () => {
       console.log(`🔥 POLLING - Verificando tarea ${taskId}`);
       
-      // 1. Verificar store global primero
-      if (globalTasks.length > 0) {
-        const globalTask = globalTasks.find(t => t.task_id === taskId);
+      // 1. Verificar store global primero usando ref
+      const currentGlobalTasks = globalTasksRef.current;
+      if (currentGlobalTasks.length > 0) {
+        const globalTask = currentGlobalTasks.find(t => t.task_id === taskId);
         if (globalTask && globalTask.status) {
           console.log(`📊 Store Global: ${globalTask.task_id} = ${globalTask.status}`);
           
           // Si el store dice SUCCESS pero nuestra tarea local no es completed
-          if (globalTask.status.toLowerCase() === 'success' && task && task.status !== 'completed') {
-            console.log(`🚨 INCONSISTENCIA DETECTADA! Store=SUCCESS, Local=${task.status}`);
+          const currentTask = taskRef.current;
+          if (globalTask.status.toLowerCase() === 'success' && currentTask && currentTask.status !== 'completed') {
+            console.log(`🚨 INCONSISTENCIA DETECTADA! Store=SUCCESS, Local=${currentTask.status}`);
             console.log(`🚀 ACTUALIZANDO INMEDIATAMENTE...`);
             await fetchTask();
             return;
@@ -107,8 +126,9 @@ const DashboardDetail = () => {
         }
       }
       
-      // 2. Si la tarea local sigue pendiente/processing, hacer fetch directo
-      if (task && (task.status === 'pending' || task.status === 'processing')) {
+      // 2. Si la tarea local sigue pendiente/processing, hacer fetch directo usando ref
+      const currentTask = taskRef.current;
+      if (currentTask && (currentTask.status === 'pending' || currentTask.status === 'processing')) {
         console.log(`🔄 Tarea pendiente - Haciendo fetch directo...`);
         await fetchTask();
       }
@@ -116,9 +136,21 @@ const DashboardDetail = () => {
 
     return () => {
       console.log(`🛑 Limpiando intervalo para tarea ${taskId}`);
-      clearInterval(interval);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
-  }, [taskId, globalTasks, task, fetchTask]);
+  }, [taskId, fetchTask]); // Incluir fetchTask pero usar refs para task y globalTasks
+
+  // Efecto separado para actualizar refs cuando cambian los datos
+  useEffect(() => {
+    taskRef.current = task;
+  }, [task]);
+
+  useEffect(() => {
+    globalTasksRef.current = globalTasks;
+  }, [globalTasks]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
