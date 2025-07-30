@@ -1,6 +1,16 @@
-# AiGO Streaming API
+# Ai## Características
 
-API FastAPI para conversaciones streaming en tiempo real con el asistente AiGO de OpenAI.
+- 🔄 **Streaming en tiempo real** - Respuestas en vivo vía WebSocket
+- 🤖 **Integración OpenAI Assistant** - Conecta directamente con AiGO (asst_MhtIYnV2GIIGf2DK2)
+- 🎯 **Manejo especial de `generar_json_final`** - Detecta y procesa automáticamente la función final
+- 👤 **Personalización por nombre** - El asistente puede personalizar respuestas usando el nombre del usuario
+- 📝 **Gestión de sesiones** - Mantiene conversaciones independientes con persistencia
+- 🏗️ **Arquitectura DDD** - Domain-Driven Design para código mantenible y escalable
+- 🔧 **Inyección de dependencias** - Arquitectura desacoplada y testeable
+- 🧪 **Cliente de prueba mejorado** - Interface web moderna para testing
+- 📊 **Monitoreo de estados** - Seguimiento detallado del estado de conversacionesming API v2.0
+
+API FastAPI para conversaciones streaming en tiempo real con el asistente AiGO de OpenAI. Refactorizada con arquitectura DDD (Domain-Driven Design) para mayor escalabilidad y mantenibilidad.
 
 ## Características
 
@@ -130,47 +140,170 @@ wscat -c "ws://localhost:8000/ws/chat/test_session?full_name=Carlos%20Ruiz"
 
 ## Arquitectura
 
+### Diseño Domain-Driven (DDD)
+
+La aplicación sigue una arquitectura por capas basada en DDD para garantizar separación de responsabilidades y facilitar el mantenimiento:
+
+```
+app/
+├── api/                    # 🌐 Capa de Presentación
+│   ├── chat.py            # Endpoints de WebSocket y gestión de sesiones
+│   └── health.py          # Endpoints de monitoreo y salud
+├── domain/                 # 🧠 Capa de Dominio (Lógica de Negocio)
+│   ├── entities.py        # Entidades del dominio (User, Conversation, Message)
+│   ├── services.py        # Servicios de dominio (ConversationService, MessageService)
+│   └── events.py          # Eventos del dominio (MessageReceived, ConversationEnded)
+├── infrastructure/        # 🔧 Capa de Infraestructura
+│   ├── openai_client.py   # Cliente para OpenAI API
+│   ├── session_store.py   # Almacenamiento de sesiones en memoria
+│   └── websocket_manager.py # Gestión de conexiones WebSocket
+├── shared/                 # 📦 Código compartido
+│   ├── exceptions.py      # Excepciones personalizadas
+│   └── types.py          # Tipos y enums comunes
+├── core/                   # ⚙️ Configuración central
+│   └── dependencies.py   # Inyección de dependencias
+└── main.py                # 🚀 Punto de entrada y configuración FastAPI
+```
+
 ### Componentes Principales
 
-- **ConversationManager**: Gestiona threads de OpenAI y streaming
-- **WebSocket Handler**: Maneja conexiones en tiempo real
-- **Function Detection**: Detecta automáticamente `generar_json_final`
-- **Session Management**: Mantiene conversaciones independientes
+#### Capa de Dominio (Domain Layer)
+- **Entities**: `User`, `Conversation`, `Message` - Objetos de negocio con identidad y comportamiento
+- **Services**: `ConversationService`, `MessageService` - Lógica de negocio pura
+- **Events**: Eventos para comunicación entre bounded contexts
+
+#### Capa de Infraestructura (Infrastructure Layer)
+- **OpenAIClient**: Abstracción para la API de OpenAI con manejo de errores
+- **SessionStore**: Repositorio en memoria para gestión de sesiones
+- **WebSocketManager**: Orquestador de conexiones WebSocket y streaming
+
+#### Capa de Presentación (API Layer)  
+- **Endpoints REST y WebSocket**: Interfaz con el mundo exterior
+- **Inyección de dependencias**: Desacoplamiento entre capas
+- **Validación de entrada**: Usando Pydantic y FastAPI
 
 ### Flujo de Conversación
 
-1. Cliente se conecta vía WebSocket (opcionalmente con parámetro `full_name`)
-2. Se crea/recupera thread de OpenAI
-3. Si se proporciona `full_name`, se envían instrucciones adicionales al asistente para personalización
-4. Mensajes se envían al asistente AiGO
-5. Respuestas se envían en streaming (personalizadas con el nombre si se proporcionó)
-6. Si se detecta `generar_json_final`, se procesa y finaliza la conversación
+1. **Conexión**: Cliente se conecta vía WebSocket (opcionalmente con parámetro `full_name`)
+2. **Inicialización**: Se crea una nueva `Conversation` entity con `User` asociado
+3. **Persistencia**: `SessionStore` almacena la conversación en memoria
+4. **Thread Creation**: `OpenAIClient` crea un thread en OpenAI para la conversación
+5. **Personalización**: Si se proporciona `full_name`, se envían instrucciones adicionales al asistente
+6. **Streaming**: `ConversationService` maneja el envío de mensajes y streaming de respuestas
+7. **Event Handling**: `MessageService` procesa eventos como `generar_json_final`
+8. **Finalización**: Al detectar función final, se emite evento de cierre y se finaliza la conversación
+
+### Ventajas de la Arquitectura
+
+- **🔒 Separación de responsabilidades**: Cada capa tiene una responsabilidad específica
+- **🧪 Facilidad de testing**: Dependencias inyectadas permiten mocking fácil
+- **📈 Escalabilidad**: Estructura preparada para crecimiento y nuevas funcionalidades
+- **🔄 Mantenibilidad**: Código organizado y fácil de entender
+- **🎯 Reutilización**: Servicios de dominio reutilizables en diferentes contextos
 
 ## Desarrollo
 
-### Estructura del Proyecto
+### Estructura del Proyecto (DDD)
 ```
 app/
 ├── __init__.py
-├── main.py          # Aplicación principal FastAPI
-├── models.py        # Modelos Pydantic
-└── config.py        # Configuración
+├── main.py                 # 🚀 FastAPI app y configuración
+├── config.py              # ⚙️ Variables de entorno
+├── api/                    # 🌐 Capa de Presentación
+│   ├── __init__.py
+│   ├── chat.py            # WebSocket y endpoints de chat
+│   └── health.py          # Health checks y monitoreo
+├── domain/                 # 🧠 Lógica de Negocio Pura
+│   ├── __init__.py
+│   ├── entities.py        # User, Conversation, Message
+│   ├── services.py        # ConversationService, MessageService
+│   └── events.py          # Eventos del dominio
+├── infrastructure/        # 🔧 Implementaciones Técnicas
+│   ├── __init__.py
+│   ├── openai_client.py   # Cliente OpenAI
+│   ├── session_store.py   # Repositorio de sesiones
+│   └── websocket_manager.py # Gestión WebSocket
+├── shared/                 # 📦 Código Compartido
+│   ├── __init__.py
+│   ├── exceptions.py      # Excepciones personalizadas
+│   └── types.py          # Enums y tipos comunes
+└── core/                   # ⚙️ Configuración Central
+    ├── __init__.py
+    └── dependencies.py    # Inyección de dependencias
 
-.env.example         # Variables de entorno template
-run.py              # Script de inicio
-pyproject.toml      # Configuración Poetry
+# Archivos de configuración
+.env                       # Variables de entorno
+.env.example              # Template de configuración
+run.py                    # Script de inicio
+pyproject.toml           # Configuración Poetry
 ```
 
 ### Agregar Dependencias
 ```bash
+# Dependencias de producción
 poetry add nueva-dependencia
+
+# Dependencias de desarrollo
 poetry add --group dev dependencia-dev
+
+# Reinstalar después de cambios en pyproject.toml
+poetry install
 ```
 
 ### Testing
 ```bash
-# Instalar dependencias de testing (cuando estén configuradas)
+# Instalar dependencias de testing
+poetry add --group dev pytest pytest-asyncio httpx
+
+# Ejecutar tests (cuando estén implementados)
 poetry run pytest
+
+# Tests con cobertura
+poetry run pytest --cov=app
+```
+
+### Extensión de la Arquitectura
+
+#### Agregar nueva funcionalidad:
+
+1. **Nueva entidad de dominio**:
+```python
+# app/domain/entities.py
+@dataclass
+class NewEntity:
+    id: str
+    # ... otros campos
+```
+
+2. **Nuevo servicio de dominio**:
+```python
+# app/domain/services.py
+class NewService:
+    def __init__(self, repository: INewRepository):
+        self._repository = repository
+    
+    async def business_logic(self) -> None:
+        # Lógica de negocio aquí
+        pass
+```
+
+3. **Nueva implementación de infraestructura**:
+```python
+# app/infrastructure/new_client.py
+class NewClient:
+    async def external_call(self) -> dict:
+        # Implementación técnica
+        pass
+```
+
+4. **Nuevo endpoint**:
+```python
+# app/api/new_endpoints.py
+router = APIRouter(prefix="/new", tags=["new"])
+
+@router.get("/")
+async def get_new(service=Depends(get_new_service)):
+    return await service.business_logic()
 ```
 
 ## Configuración
@@ -215,6 +348,13 @@ CMD ["poetry", "run", "python", "run.py"]
 
 ## Características Avanzadas
 
+### Arquitectura Domain-Driven Design
+- **Separation of Concerns**: Cada capa tiene responsabilidades bien definidas
+- **Dependency Injection**: Facilita testing y intercambio de implementaciones
+- **Event-Driven**: Comunicación entre componentes mediante eventos
+- **Repository Pattern**: Abstracción del almacenamiento de datos
+- **Service Layer**: Lógica de negocio centralizada y reutilizable
+
 ### Personalización por Nombre
 - El endpoint WebSocket acepta un parámetro opcional `full_name`
 - Cuando se proporciona, el asistente recibe instrucciones para personalizar la conversación
@@ -226,31 +366,101 @@ CMD ["poetry", "run", "python", "run.py"]
 - Captura los datos finales antes de la despedida
 - Finaliza la conversación de forma elegante
 
-### Gestión de Sesiones
+### Gestión Avanzada de Sesiones
 - Cada conexión WebSocket tiene un ID único
-- Las conversaciones se mantienen independientes
-- Se almacena el nombre del usuario cuando se proporciona
-- Cleanup automático al desconectar
+- Las conversaciones se modelan como entidades de dominio
+- Estados de conversación (Active, Completed, Failed, etc.)
+- Se almacena información completa del usuario y contexto
+- Cleanup automático y manejo de desconexiones inesperadas
+- Eventos de dominio para auditoria y monitoreo
 
-### Error Handling
-- Manejo robusto de errores de OpenAI
-- Reconexión automática en caso de fallos
-- Logging detallado para debugging
+### Manejo Robusto de Errores
+- Excepciones personalizadas por capa de la aplicación
+- Logging estructurado con contexto de sesión
+- Recuperación automática de conexiones perdidas
+- Validación de entrada en múltiples niveles
+- Manejo graceful de errores de OpenAI API
 
-## Troubleshooting
+### Troubleshooting
 
 ### Errores Comunes
 
 1. **"OPENAI_API_KEY is required"**
    - Configurar la variable de entorno en `.env`
+   - Verificar que el archivo `.env` esté en el directorio raíz
 
-2. **WebSocket connection failed**
-   - Verificar que el servidor esté ejecutándose
-   - Revisar configuración de CORS
+2. **"Assistant not found"**
+   - Verificar que el ASSISTANT_ID sea correcto en `.env`
+   - Confirmar que el asistente existe en tu cuenta de OpenAI
 
-3. **Assistant not responding**
-   - Verificar que el ASSISTANT_ID sea correcto
-   - Revisar logs del servidor
+3. **WebSocket connection failed**
+   - Verificar que el servidor esté ejecutándose en el puerto correcto
+   - Revisar configuración de CORS en caso de conexión desde frontend
+   - Verificar que no haya firewall bloqueando el puerto
 
-### Logs
-Los logs se imprimen en consola con nivel INFO por defecto. Ajustar con `LOG_LEVEL=DEBUG` para más detalle.
+4. **Import errors después de refactoring**
+   - Ejecutar `poetry install` para reinstalar dependencias
+   - Verificar que todos los archivos `__init__.py` estén presentes
+   - Revisar imports relativos en la nueva estructura
+
+5. **Dependency injection errors**
+   - Verificar que las dependencias estén configuradas en `main.py`
+   - Asegurar que los servicios se inicialicen correctamente
+   - Revisar que los routers tengan acceso a las instancias inyectadas
+
+### Logs y Debugging
+Los logs se imprimen en consola con nivel INFO por defecto. Para debugging:
+```bash
+# Modo debug con logs detallados
+LOG_LEVEL=DEBUG poetry run python run.py
+
+# Verificar configuración
+curl http://localhost:8000/health
+
+# Monitorear sesiones activas
+curl http://localhost:8000/sessions
+```
+
+### Migración desde v1.0
+Si estás migrando desde la versión anterior:
+1. La API pública se mantiene igual (mismos endpoints)
+2. Los WebSocket mantienen el mismo protocolo de mensajes
+3. El cliente de prueba tiene mejoras visuales pero misma funcionalidad
+4. Variables de entorno siguen siendo las mismas
+
+## Roadmap
+
+### v2.1 (Próxima versión)
+- [ ] Tests unitarios completos para todas las capas
+- [ ] Integración con Redis para persistencia de sesiones
+- [ ] Métricas y observabilidad con Prometheus
+- [ ] Rate limiting por usuario
+- [ ] Autenticación JWT
+
+### v2.2 (Futuro)
+- [ ] Soporte para múltiples asistentes
+- [ ] Webhooks para notificaciones
+- [ ] API REST complementaria
+- [ ] Dashboard de administración
+- [ ] Clustering y alta disponibilidad
+
+## Contribución
+
+### Estructura de commits
+```
+type(scope): description
+
+- feat: nueva funcionalidad
+- fix: corrección de errores
+- refactor: refactorización de código
+- docs: documentación
+- test: pruebas
+```
+
+### Pull Requests
+1. Fork del repositorio
+2. Crear rama con nombre descriptivo: `feature/nueva-funcionalidad`
+3. Implementar cambios siguiendo la arquitectura DDD
+4. Agregar tests si es necesario
+5. Actualizar documentación
+6. Crear PR con descripción detallada
