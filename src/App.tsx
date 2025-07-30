@@ -1,6 +1,5 @@
 
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -9,20 +8,35 @@ import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
-import { AuthProvider, useAuth } from './hooks/useAuth';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
 import AuthModal from './components/AuthModal';
 import DashboardDetail from "./pages/DashboardDetail";
 import DashboardDemo from "./pages/DashboardDemo";
 import DashboardDemoDetail from "./pages/DashboardDemoDetail";
+import { useNotificationPoller } from './hooks/use-notification-poller';
+import { TaskNotificationListener } from './components/TaskNotificationListener';
+import { useTaskPolling } from './hooks/useTaskPolling';
 
 const queryClient = new QueryClient();
 
-const AppContent = () => {
+function AuthModalWrapper() {
   const { isAuthModalOpen, closeAuthModal } = useAuth();
+  return <AuthModal open={isAuthModalOpen} onOpenChange={closeAuthModal} />;
+}
+
+function AppContent() {
+  // Iniciar el polling de notificaciones
+  useNotificationPoller();
+  
+  // Iniciar el polling automático de tareas
+  useTaskPolling();
+
   return (
-    <>
+    <div className="app-container">
       <Navbar />
-      <AuthModal open={isAuthModalOpen} onOpenChange={closeAuthModal} />
+      <AuthModalWrapper />
+      <TaskNotificationListener />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -30,41 +44,25 @@ const AppContent = () => {
         <Route path="/dashboard-demo/:taskId" element={<DashboardDemoDetail />} />
         <Route path="/dashboard/:taskId" element={<DashboardDetail />} />
         <Route path="/upload" element={<Upload />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </>
+      <Toaster />
+    </div>
   );
 }
 
-const App = () => (
-  <AuthProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
+const App = () => {
+  return (
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <Navbar />
-          <AuthModalWrapper />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard-demo" element={<DashboardDemo />} />
-            <Route path="/dashboard-demo/:taskId" element={<DashboardDemoDetail />} />
-            <Route path="/dashboard/:taskId" element={<DashboardDetail />} />
-            <Route path="/upload" element={<Upload />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <TooltipProvider>
+            <AppContent />
+          </TooltipProvider>
         </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </AuthProvider>
-);
-
-function AuthModalWrapper() {
-  const { isAuthModalOpen, closeAuthModal } = useAuth();
-  return <AuthModal open={isAuthModalOpen} onOpenChange={closeAuthModal} />;
-}
+      </QueryClientProvider>
+    </AuthProvider>
+  );
+};
 
 export default App;

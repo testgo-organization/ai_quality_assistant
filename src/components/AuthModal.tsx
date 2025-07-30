@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { API_BASE_URL } from '@/config';
 
 interface AuthModalProps {
@@ -31,25 +31,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onOpenChange }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}user/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Credenciales incorrectas. Por favor, inténtalo de nuevo.');
-      }
-
-      const data = await response.json();
-      login(email, data.access_token, data.refresh_token);
+      // Usar la función de login del contexto que ya hace la petición al API
+      await login(email, password);
       onOpenChange(false);
-
+      
+      // Limpiar el formulario
+      setEmail('');
+      setPassword('');
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Ocurrió un error inesperado.');
+        setError('Error inesperado. Por favor, inténtalo de nuevo.');
       }
     } finally {
       setIsLoading(false);
