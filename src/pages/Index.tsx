@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PricingSection from "@/components/PricingSection";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const { isAuthenticated, openAuthModal } = useAuth();

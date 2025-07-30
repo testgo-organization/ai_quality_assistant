@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Upload as UploadIcon, 
@@ -9,12 +9,12 @@ import {
   AlertCircle, 
   FileAudio 
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useAuth } from "@/contexts/AuthContext";
 import { API_BASE_URL } from "@/config";
 import ProcessingModal from "@/components/ProcessingModal";
-
-const POLLING_INTERVAL = 2000; // 2 segundos
+import { useTaskStatus } from '@/hooks/use-task-status';
+import { useNotificationPoller } from '@/hooks/use-notification-poller';
 
 interface AudioTask {
   filename: string;
@@ -23,14 +23,14 @@ interface AudioTask {
 }
 
 const Upload = () => {
-  const { toast } = useToast();
-  const { isAuthenticated, getToken, openAuthModal } = useAuth();
+  const { showSuccess, showError, showWarning } = useNotifications();
+  const { isAuthenticated, getToken, openAuthModal, logout } = useAuth();
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [processingTasks, setProcessingTasks] = useState<AudioTask[]>([]);
   const [showProcessingModal, setShowProcessingModal] = useState(false);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const [userClosedModal, setUserClosedModal] = useState(false);
+  const { stopPolling, clearNotifications } = useNotificationPoller();
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -64,11 +64,10 @@ const Upload = () => {
     );
     
     if (validFiles.length !== newFiles.length) {
-      toast({
-        title: "Archivo(s) no válido(s)",
-        description: "Solo se permiten archivos de texto o audio",
-        variant: "destructive"
-      });
+      showError(
+        "Archivo(s) no válido(s)",
+        "Solo se permiten archivos de texto o audio"
+      );
     }
     
     setFiles(prev => [...prev, ...validFiles]);
@@ -86,13 +85,15 @@ const Upload = () => {
     uploadFiles();
   };
 
+  const { addTasks, tasks } = useTaskStatus();
+
+  // Modificar la función uploadFiles
   const uploadFiles = async () => {
     if (files.length === 0) {
-      toast({
-        title: "No hay archivos",
-        description: "Por favor selecciona al menos un archivo para procesar",
-        variant: "destructive"
-      });
+      showError(
+        "No hay archivos",
+        "Por favor selecciona al menos un archivo para procesar"
+      );
       return;
     }
     setProcessing(true);
@@ -112,8 +113,27 @@ const Upload = () => {
         body: formData,
       });
 
+      // Manejar específicamente errores de autenticación
+      if (response.status === 401) {
+        // Token inválido o expirado
+        setProcessing(false);
+        setShowProcessingModal(false);
+        stopPolling(); // Detener polling de notificaciones
+        
+        showError(
+          "Sesión expirada",
+          "Tu sesión ha expirado. Por favor, inicia sesión nuevamente."
+        );
+        
+        // Cerrar sesión y abrir modal de autenticación
+        await logout();
+        openAuthModal();
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error('Error al enviar los archivos para procesamiento.');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al enviar los archivos para procesamiento.');
       }
 
       const data = await response.json();
@@ -121,103 +141,41 @@ const Upload = () => {
         throw new Error('Respuesta del servidor inválida.');
       }
 
-      setProcessingTasks(data.tasks);
-      startPolling(data.tasks, token);
+      addTasks(data.tasks);
+      
+      setProcessing(false);
+      // NO cerrar el modal aquí - debe mantenerse abierto para mostrar el progreso
+      // setShowProcessingModal(false); // Removido - el usuario lo cerrará manualmente
+      
+      showSuccess(
+        "Archivos enviados",
+        "Los archivos se han enviado correctamente para procesamiento."
+      );
     } catch (error) {
       setProcessing(false);
       setShowProcessingModal(false);
-      toast({
-        title: "Error en el procesamiento",
-        description: "No se pudieron procesar los archivos. Inténtalo de nuevo.",
-        variant: "destructive"
-      });
+      
+      const errorMessage = error instanceof Error ? error.message : "No se pudieron procesar los archivos. Inténtalo de nuevo.";
+      
+      showError(
+        "Error en el procesamiento",
+        errorMessage
+      );
     }
   };
-
-  const startPolling = (tasks: AudioTask[], token: string | null) => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
-
-    pollingRef.current = setInterval(async () => {
-      let allCompleted = true;
-      const updatedTasks = [...tasks];
-
-      for (let i = 0; i < updatedTasks.length; i++) {
-        const task = updatedTasks[i];
-        if (task.status && task.status !== 'PENDING') continue;
-
-        try {
-          const response = await fetch(`${API_BASE_URL}audio/process/status/${task.task_id}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-
-          if (!response.ok) throw new Error('Error al consultar el estado del procesamiento.');
-          
-          const data = await response.json();
-          updatedTasks[i] = { ...task, status: data.status };
-          
-          if (data.status === 'PENDING') {
-            allCompleted = false;
-          }
-        } catch (err) {
-          // Si hay error en una tarea, seguimos con las demás
-          allCompleted = false;
-        }
-      }
-
-      setProcessingTasks(updatedTasks);
-
-      if (allCompleted) {
-        clearInterval(pollingRef.current!);
-        setProcessing(false);
-        setProcessingTasks([]);
-        setShowProcessingModal(false);
-        setFiles([]);
-
-        // Contar éxitos y fallos
-        const successCount = updatedTasks.filter(t => t.status === 'SUCCESS').length;
-        const failCount = updatedTasks.filter(t => t.status === 'ERROR').length;
-
-        if (failCount === 0) {
-          toast({
-            title: "Procesamiento completado",
-            description: `${successCount} archivo(s) procesados correctamente.`,
-            variant: "default"
-          });
-        } else if (successCount === 0) {
-          toast({
-            title: "Procesamiento fallido",
-            description: "Hubo problemas al procesar los archivos.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Procesamiento parcialmente completado",
-            description: `${successCount} archivo(s) procesados correctamente. ${failCount} archivo(s) fallaron.`,
-            variant: "default"
-          });
-        }
-      }
-    }, POLLING_INTERVAL);
-  };
-
-  // Limpiar polling al desmontar
-  React.useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, []);
 
   // Mostrar el modal automáticamente si hay tareas pendientes
   React.useEffect(() => {
-    const hasPending = processingTasks.some(task => !task.status || task.status.toUpperCase() === 'PENDING');
-    if (hasPending) {
+    const hasPending = tasks.some(task => !task.status || task.status.toUpperCase() === 'PENDING');
+    if (hasPending && !userClosedModal) {
       setShowProcessingModal(true);
-    } else if (processingTasks.length > 0) {
-      setShowProcessingModal(false);
+    } else if (tasks.length > 0 && !hasPending) {
+      // Solo cerrar automáticamente si todas las tareas están completadas y el usuario no cerró manualmente
+      if (!userClosedModal) {
+        setShowProcessingModal(false);
+      }
     }
-  }, [processingTasks]);
+  }, [tasks, userClosedModal]);
 
   const getFileIcon = (file: File) => {
     if (file.type.includes('audio')) return <FileAudio size={20} />;
@@ -228,8 +186,11 @@ const Upload = () => {
     <>
       <ProcessingModal 
         open={showProcessingModal} 
-        onClose={() => setShowProcessingModal(false)} 
-        tasks={processingTasks}
+        onClose={() => {
+          setShowProcessingModal(false);
+          setUserClosedModal(true);
+        }} 
+        tasks={tasks}
       />
       <div className="min-h-screen pt-20 pb-10 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-slate-900/50">
         <div className="max-w-4xl mx-auto space-y-8">
@@ -327,9 +288,9 @@ const Upload = () => {
                 <Button 
                   onClick={handleUploadAttempt} 
                   className="w-full bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                  disabled={processing || processingTasks.length > 0}
+                  disabled={processing || tasks.some(task => !task.status || task.status === 'PENDING')}
                 >
-                  {(processing || processingTasks.length > 0) ? (
+                  {(processing || tasks.some(task => !task.status || task.status === 'PENDING')) ? (
                     <>
                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

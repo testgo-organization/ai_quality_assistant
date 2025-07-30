@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import TranscriptionModal from '@/components/TranscriptionModal';
 import { ArrowLeft, LogIn } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Copia de los datos de demoResults
 const demoResults = [

@@ -1,5 +1,5 @@
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check, X, Loader2 } from "lucide-react";
 
@@ -37,7 +37,9 @@ const statusText = (status?: string) => {
 
 const ProcessingModal: React.FC<ProcessingModalProps> = ({ open, onClose, tasks }) => {
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
       <DialogContent className="sm:max-w-xl text-center">
         <DialogHeader>
           <DialogTitle>Procesando archivos de audio</DialogTitle>
@@ -60,15 +62,13 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({ open, onClose, tasks 
           <p className="text-gray-600 dark:text-gray-300 text-xs">
             TestGoAi analiza el contenido de tus audios para extraer motivos de contacto, emociones, predicción de satisfacción y cumplimiento de protocolos.
           </p>
-          <DialogClose asChild>
-            <Button variant="outline" className="w-full mt-2" onClick={onClose}>
-              Cerrar y continuar navegando
-            </Button>
-          </DialogClose>
+          <Button variant="outline" className="w-full mt-2" onClick={onClose}>
+            Cerrar y continuar navegando
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default ProcessingModal; 
+export default ProcessingModal;
