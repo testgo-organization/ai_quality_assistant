@@ -34,8 +34,8 @@ class WebSocketManager:
         )
         
         # Enviar mensaje de conexión
-        connection_msg = self.message_service.create_connection_message(session_id)
-        await self.send_message(session_id, connection_msg)
+        # connection_msg = self.message_service.create_connection_message(session_id)
+        # await self.send_message(session_id, connection_msg)
         
         logger.info(f"Cliente conectado: {session_id}")
     
@@ -64,7 +64,9 @@ class WebSocketManager:
             message_type = data.get("type", "message")
             
             if message_type == "message":
-                await self._handle_user_message(session_id, data.get("content", ""))
+                content = data.get("content", "")
+                timestamp = data.get("timestamp")
+                await self._handle_user_message(session_id, content, timestamp)
             elif message_type == "ping":
                 pong_msg = self.message_service.create_pong_message()
                 await self.send_message(session_id, pong_msg)
@@ -76,7 +78,7 @@ class WebSocketManager:
             error_msg = self.message_service.create_error_message(str(e))
             await self.send_message(session_id, error_msg)
     
-    async def _handle_user_message(self, session_id: str, content: str) -> None:
+    async def _handle_user_message(self, session_id: str, content: str, timestamp: Optional[str] = None) -> None:
         """Manejar mensaje del usuario"""
         if not content.strip():
             error_msg = self.message_service.create_error_message("Mensaje vacío")
@@ -84,8 +86,12 @@ class WebSocketManager:
             return
         
         try:
+            # Log del timestamp si está disponible
+            if timestamp:
+                logger.info(f"Mensaje recibido de {session_id} con timestamp: {timestamp}")
+            
             # Enviar mensaje al asistente
-            run_id = await self.conversation_service.send_message(session_id, content)
+            run_id = await self.conversation_service.send_message(session_id, content, timestamp)
             
             # Procesar respuesta en streaming
             await self._stream_response(session_id, run_id)
@@ -128,14 +134,14 @@ class WebSocketManager:
                 
                 elif status in ["failed", "cancelled", "expired"]:
                     error_msg = self.message_service.create_error_message(
-                        f"Run falló: {status}"
+                        f"Tengo algunos problemas en estos momentos, por favor intenta mas tarde."
                     )
                     await self.send_message(session_id, error_msg)
                     break
                 
-                elif status in ["in_progress", "queued"]:
-                    status_msg = self.message_service.create_status_message(status)
-                    await self.send_message(session_id, status_msg)
+                # elif status in ["in_progress", "queued"]:
+                #     status_msg = self.message_service.create_status_message(status)
+                #     await self.send_message(session_id, status_msg)
                 
                 await asyncio.sleep(1)
                 

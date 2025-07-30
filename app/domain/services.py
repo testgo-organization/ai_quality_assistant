@@ -35,7 +35,7 @@ class ConversationService:
         """Obtener conversación existente"""
         return await self.session_store.get_conversation(session_id)
     
-    async def send_message(self, session_id: str, message_content: str) -> str:
+    async def send_message(self, session_id: str, message_content: str, timestamp: Optional[str] = None) -> str:
         """Procesar mensaje del usuario"""
         conversation = await self.get_conversation(session_id)
         if not conversation:
@@ -46,6 +46,10 @@ class ConversationService:
             thread_id = await self.openai_client.create_thread()
             conversation.update_thread_id(thread_id)
             await self.session_store.save_conversation(conversation)
+        
+        # Log del timestamp si está disponible
+        if timestamp:
+            logger.info(f"Procesando mensaje con timestamp: {timestamp}")
         
         # Enviar mensaje al thread
         await self.openai_client.add_message_to_thread(
@@ -111,14 +115,14 @@ class ConversationService:
 class MessageService:
     """Servicio para manejo de mensajes"""
     
-    @staticmethod
-    def create_connection_message(session_id: str) -> WebSocketMessage:
-        """Crear mensaje de conexión"""
-        return WebSocketMessage(
-            type=MessageType.CONNECTION,
-            content="Conectado al asistente AiGO",
-            data={"session_id": session_id}
-        )
+    # @staticmethod
+    # def create_connection_message(session_id: str) -> WebSocketMessage:
+    #     """Crear mensaje de conexión"""
+    #     return WebSocketMessage(
+    #         type=MessageType.CONNECTION,
+    #         content="Conectado al asistente AiGO",
+    #         data={"session_id": session_id}
+    #     )
     
     @staticmethod
     def create_response_message(content: str) -> WebSocketMessage:
@@ -129,14 +133,14 @@ class MessageService:
             status="completed"
         )
     
-    @staticmethod
-    def create_status_message(status: str, content: str = "Procesando...") -> WebSocketMessage:
-        """Crear mensaje de estado"""
-        return WebSocketMessage(
-            type=MessageType.STATUS,
-            content=content,
-            status=status
-        )
+    # @staticmethod
+    # def create_status_message(status: str, content: str = "Procesando...") -> WebSocketMessage:
+    #     """Crear mensaje de estado"""
+    #     return WebSocketMessage(
+    #         type=MessageType.STATUS,
+    #         content=content,
+    #         status=status
+    #     )
     
     @staticmethod
     def create_function_call_message(function_name: str) -> WebSocketMessage:

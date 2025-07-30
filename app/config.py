@@ -13,7 +13,7 @@ class Settings:
     
     # Servidor
     HOST: str = os.getenv("HOST", "0.0.0.0")
-    PORT: int = int(os.getenv("PORT", "8000"))
+    PORT: int = int(os.getenv("PORT", "8010"))
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
     
     # Logging
