@@ -5,6 +5,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  hasCompletedAiQualityOnboarding?: boolean;
 }
 
 interface AuthContextType {
@@ -19,6 +20,9 @@ interface AuthContextType {
   isAuthModalOpen: boolean;
   openAuthModal: () => void;
   closeAuthModal: () => void;
+  showAiGoChat: boolean;
+  setShowAiGoChat: (show: boolean) => void;
+  completeAiQualityOnboarding: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [showAiGoChat, setShowAiGoChat] = useState(false);
 
   useEffect(() => {
     // Verificar si hay una sesión guardada
@@ -65,7 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = {
         id: data.user?.id || '1',
         email: data.user?.email || email,
-        name: data.user?.name || 'Usuario'
+        name: data.user?.name || 'Usuario',
+        hasCompletedAiQualityOnboarding: data.user?.hasCompletedAiQualityOnboarding || false
       };
       
       const authToken = data.access_token || data.token;
@@ -78,6 +84,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('auth_token', authToken);
       setIsAuthModalOpen(false);
+      
+      // Mostrar chat de AiGO si no ha completado el onboarding
+      if (!user.hasCompletedAiQualityOnboarding) {
+        setShowAiGoChat(true);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
       throw err;
@@ -111,7 +122,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const mockUser = {
         id: '1',
         email,
-        name
+        name,
+        hasCompletedAiQualityOnboarding: false
       };
       const mockToken = 'mock-jwt-token';
       setUser(mockUser);
@@ -119,6 +131,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('user', JSON.stringify(mockUser));
       localStorage.setItem('auth_token', mockToken);
       setIsAuthModalOpen(false);
+      
+      // Mostrar chat de AiGO para nuevos usuarios
+      setShowAiGoChat(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrarse');
       throw err;
@@ -130,6 +145,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getToken = useCallback(() => token, [token]);
   const openAuthModal = useCallback(() => setIsAuthModalOpen(true), []);
   const closeAuthModal = useCallback(() => setIsAuthModalOpen(false), []);
+
+  const completeAiQualityOnboarding = useCallback(() => {
+    if (user) {
+      const updatedUser = { ...user, hasCompletedAiQualityOnboarding: true };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setShowAiGoChat(false);
+    }
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ 
@@ -143,7 +167,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       getToken,
       isAuthModalOpen,
       openAuthModal,
-      closeAuthModal
+      closeAuthModal,
+      showAiGoChat,
+      setShowAiGoChat,
+      completeAiQualityOnboarding
     }}>
       {children}
     </AuthContext.Provider>

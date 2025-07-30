@@ -17,12 +17,18 @@ import DashboardDemoDetail from "./pages/DashboardDemoDetail";
 import { useNotificationPoller } from './hooks/use-notification-poller';
 import { TaskNotificationListener } from './components/TaskNotificationListener';
 import { useTaskPolling } from './hooks/useTaskPolling';
+import AiGoChat from './components/AiGoChat';
 
 const queryClient = new QueryClient();
 
 function AuthModalWrapper() {
   const { isAuthModalOpen, closeAuthModal } = useAuth();
   return <AuthModal open={isAuthModalOpen} onOpenChange={closeAuthModal} />;
+}
+
+function AiGoChatWrapper() {
+  const { showAiGoChat, setShowAiGoChat } = useAuth();
+  return <AiGoChat open={showAiGoChat} onOpenChange={setShowAiGoChat} />;
 }
 
 function AppContent() {
@@ -36,6 +42,7 @@ function AppContent() {
     <div className="app-container">
       <Navbar />
       <AuthModalWrapper />
+      <AiGoChatWrapper />
       <TaskNotificationListener />
       <Routes>
         <Route path="/" element={<Index />} />
