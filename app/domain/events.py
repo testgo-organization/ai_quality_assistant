@@ -1,66 +1,73 @@
 """
 Eventos del dominio - Para comunicación entre capas
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from .entities import MessageType
 
 
 @dataclass
 class DomainEvent:
     """Evento base del dominio"""
-    timestamp: datetime = datetime.now()
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
-class ConversationStarted(DomainEvent):
+class ConversationStarted:
     """Evento: Nueva conversación iniciada"""
     session_id: str
     user_name: str
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
-class MessageReceived(DomainEvent):
+class MessageReceived:
     """Evento: Mensaje recibido del usuario"""
     session_id: str
     content: str
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
-class AssistantResponseReady(DomainEvent):
+class AssistantResponseReady:
     """Evento: Respuesta del asistente lista"""
     session_id: str
     content: str
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
-class FunctionCallDetected(DomainEvent):
+class FunctionCallDetected:
     """Evento: Llamada a función detectada"""
     session_id: str
     function_name: str
     arguments: Dict[str, Any]
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
-class FinalDataGenerated(DomainEvent):
+class FinalDataGenerated:
     """Evento: Datos finales generados"""
     session_id: str
     final_data: Dict[str, Any]
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
-class ConversationEnded(DomainEvent):
+class ConversationEnded:
     """Evento: Conversación finalizada"""
     session_id: str
     reason: str = "completed"
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
-class WebSocketMessageEvent(DomainEvent):
+class WebSocketMessageEvent:
     """Evento: Mensaje WebSocket a enviar"""
     session_id: str
     message_type: MessageType
-    content: str = None
-    data: Dict[str, Any] = None
-    status: str = None
+    content: Optional[str] = None
+    data: Optional[Dict[str, Any]] = None
+    status: Optional[str] = None
+    timestamp: datetime = field(default_factory=datetime.now)

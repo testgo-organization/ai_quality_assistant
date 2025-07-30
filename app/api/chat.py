@@ -29,8 +29,8 @@ def get_session_store():
 async def websocket_chat(
     websocket: WebSocket, 
     session_id: str, 
-    full_name: Optional[str] = None,
-    manager=Depends(get_websocket_manager)
+    manager=Depends(get_websocket_manager),
+    full_name: Optional[str] = None
 ):
     """WebSocket endpoint para conversaciones streaming"""
     try:
@@ -152,7 +152,7 @@ async def test_client():
                 const fullName = nameInput.value.trim();
                 const sessionId = 'test_' + Math.random().toString(36).substr(2, 9);
                 
-                let wsUrl = `ws://localhost:8000/ws/chat/${sessionId}`;
+                let wsUrl = `ws://localhost:8010/ws/chat/${sessionId}`;
                 if (fullName) {
                     wsUrl += `?full_name=${encodeURIComponent(fullName)}`;
                 }
@@ -246,7 +246,8 @@ async def test_client():
                     addMessage(`👤 Tú: ${message}`, 'user');
                     ws.send(JSON.stringify({
                         type: 'message',
-                        content: message
+                        content: message,
+                        timestamp: new Date().toISOString()
                     }));
                     messageInput.value = '';
                 }
