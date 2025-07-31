@@ -67,6 +67,7 @@ class DirectAiGOService:
     <regla>Usa el nombre del usuario frecuentemente en tus respuestas (parámetro: full_name).</regla>
     <regla>Siempre inicia con una presentación como: "Hola, soy AiGO. Estoy aquí para ayudarte..."</regla>
     <regla>No muestres null si tienes un valor. Si algún campo queda en null, notifícalo claramente y pide corrección.</regla>
+    <regla>No comentes nada sobre le procesamiento del JSON  o de genración de JSON final simplemente despídete</regla>
   </restricciones>
   <finalizacion>
     <accion>Cuando toda la información esté validada, llama a la función generar_json_final</accion>
@@ -172,6 +173,74 @@ class DirectAiGOService:
             messages = [{"role": "system", "content": self.system_prompt}]
             messages.extend(session.get_messages())
             
+            # PRIMERA PASADA: Verificar si se va a ejecutar una función (sin streaming)
+            logger.info(f"Verificando si se ejecutará función en sesión {session_id}")
+            try:
+                check_response = self.client.chat.completions.create(
+                    model="gpt-4-1106-preview",
+                    messages=messages,
+                    tools=[{"type": "function", "function": self.function_schema}],
+                    tool_choice="auto",
+                    temperature=0.7,
+                    top_p=1.0,
+                    max_tokens=1000
+                )
+                
+                # Si hay tool_calls, procesarlos correctamente
+                if check_response.choices[0].message.tool_calls:
+                    for tool_call in check_response.choices[0].message.tool_calls:
+                        if tool_call.function.name == "generar_json_final":
+                            logger.info(f"🔧 Función detectada - procesando datos completos en sesión {session_id}")
+                            
+                            # Mostrar el contenido de la respuesta si existe
+                            if check_response.choices[0].message.content:
+                                yield check_response.choices[0].message.content
+                            
+                            # Procesar los datos de la función
+                            try:
+                                import json
+                                datos_recopilados = json.loads(tool_call.function.arguments)
+                                
+                                logger.info(f"=== DATOS RECOPILADOS EN SESIÓN {session_id} ===")
+                                logger.info(f"Usuario: {full_name}")
+                                logger.info(f"Tool Call ID: {tool_call.id}")
+                                
+                                # Log campo por campo para mejor legibilidad
+                                logger.info(f"📋 SERVICIO: {datos_recopilados.get('servicio', 'N/A')}")
+                                logger.info(f"📢 CAMPAÑA: {datos_recopilados.get('campaña', 'N/A')}")
+                                logger.info(f"📞 TIPO GESTIÓN: {datos_recopilados.get('tipo_gestion', 'N/A')}")
+                                logger.info(f"⏱️ TIEMPO ESPERA: {datos_recopilados.get('tiempo_espera_aprobado_segundos', 'N/A')} segundos")
+                                logger.info(f"🚫 ERRORES GRAVES CLIENTE: {datos_recopilados.get('errores_graves_cliente', [])}")
+                                logger.info(f"🏢 ERRORES GRAVES NEGOCIO: {datos_recopilados.get('errores_graves_negocio', {})}")
+                                logger.info(f"⚠️ ERRORES NO GRAVES: {datos_recopilados.get('errores_no_graves', [])}")
+                                logger.info(f"💬 PROTOCOLO: {datos_recopilados.get('protocolo', {})}")
+                                logger.info(f"📊 REGLAS EVALUACIÓN: {datos_recopilados.get('reglas_evaluacion', {})}")
+                                
+                                logger.info(f"=== JSON COMPLETO FORMATEADO ===")
+                                logger.info(f"{json.dumps(datos_recopilados, indent=2, ensure_ascii=False)}")
+                                logger.info(f"=== FIN DATOS SESIÓN {session_id} ===")
+                                
+                                # Agregar despedida amigable
+                                despedida = f"\n\n¡Perfecto, {full_name}! 🎉 He recopilado toda la información necesaria para configurar tu auditoría de llamadas. Ha sido un placer ayudarte en este proceso. ¡Que tengas un excelente día y mucho éxito con tu sistema de calidad! 😊"
+                                yield despedida
+                                
+                                # Agregar respuesta al historial
+                                full_response = (check_response.choices[0].message.content or "") + despedida
+                                session.add_message("assistant", full_response)
+                                
+                                return  # Terminar aquí cuando se ejecuta la función
+                                
+                            except json.JSONDecodeError as e:
+                                logger.error(f"❌ ERROR PARSEANDO JSON en sesión {session_id}: {e}")
+                                logger.error(f"Argumentos problemáticos: '{tool_call.function.arguments}'")
+                                yield f"\n\n[Error procesando datos de configuración]"
+                                return
+                
+            except Exception as e:
+                logger.warning(f"Error en verificación de función, continuando con streaming: {e}")
+            
+            # SEGUNDA PASADA: Si no hay función, proceder con streaming normal
+            logger.info(f"No se detectó función, procediendo con streaming normal en sesión {session_id}")
             response_content = ""
             
             with self.client.chat.completions.create(
@@ -189,15 +258,6 @@ class DirectAiGOService:
                         content_chunk = chunk.choices[0].delta.content
                         response_content += content_chunk
                         yield content_chunk
-                        
-                    # Manejar llamadas a funciones
-                    if chunk.choices[0].delta.tool_calls:
-                        for tool_call in chunk.choices[0].delta.tool_calls:
-                            if tool_call.function and tool_call.function.name == "generar_json_final":
-                                logger.info("Función generar_json_final detectada")
-                                yield f"\n\n[FUNCIÓN DETECTADA: {tool_call.function.name}]"
-                                if tool_call.function.arguments:
-                                    yield f"\n[DATOS: {tool_call.function.arguments}]"
             
             # Agregar respuesta del asistente al historial
             if response_content:
@@ -265,14 +325,41 @@ class DirectAiGOService:
                     }
                     result["tool_calls"].append(tool_info)
                     
-                    # Si es generar_json_final, parsear los datos
+                    # Si es generar_json_final, parsear los datos (solo logging)
                     if tool_call.function.name == "generar_json_final":
                         import json
                         try:
-                            result["function_data"] = json.loads(tool_call.function.arguments)
-                            logger.info("Datos finales generados correctamente")
+                            function_data = json.loads(tool_call.function.arguments)
+                            result["function_data"] = function_data
+                            
+                            # Logging detallado de los datos recopilados
+                            logger.info(f"=== FUNCIÓN GENERAR_JSON_FINAL EJECUTADA ===")
+                            logger.info(f"Sesión: {session_id}")
+                            logger.info(f"Usuario: {full_name}")
+                            logger.info(f"=== DATOS RECOPILADOS COMPLETOS ===")
+                            logger.info(f"Servicio: {function_data.get('servicio', 'N/A')}")
+                            logger.info(f"Campaña: {function_data.get('campaña', 'N/A')}")
+                            logger.info(f"Tipo de gestión: {function_data.get('tipo_gestion', 'N/A')}")
+                            logger.info(f"Tiempo espera (seg): {function_data.get('tiempo_espera_aprobado_segundos', 'N/A')}")
+                            logger.info(f"Errores graves cliente: {function_data.get('errores_graves_cliente', [])}")
+                            logger.info(f"Errores graves negocio: {function_data.get('errores_graves_negocio', {})}")
+                            logger.info(f"Errores no graves: {function_data.get('errores_no_graves', [])}")
+                            logger.info(f"Protocolo: {function_data.get('protocolo', {})}")
+                            logger.info(f"Reglas evaluación: {function_data.get('reglas_evaluacion', {})}")
+                            logger.info(f"=== JSON COMPLETO ===")
+                            logger.info(f"{json.dumps(function_data, indent=2, ensure_ascii=False)}")
+                            logger.info(f"=== FIN DATOS SESIÓN {session_id} ===")
+                            
+                            # Agregar despedida amigable al contenido
+                            despedida = f"\n\n¡Perfecto, {full_name}! 🎉 He recopilado toda la información necesaria para configurar tu auditoría de llamadas. Ha sido un placer ayudarte en este proceso. ¡Que tengas un excelente día y mucho éxito con tu sistema de calidad! 😊"
+                            if result["content"]:
+                                result["content"] += despedida
+                            else:
+                                result["content"] = despedida.strip()
+                                
                         except json.JSONDecodeError as e:
-                            logger.error(f"Error parseando datos finales: {e}")
+                            logger.error(f"Error parseando datos de generar_json_final en sesión {session_id}: {e}")
+                            logger.error(f"Argumentos recibidos: {tool_call.function.arguments}")
             
             return result
             
