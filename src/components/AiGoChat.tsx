@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,46 +28,78 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
 
-  // Configurar el hook de WebSocket con callbacks
-const sessionUuidRef = useRef<string>(uuidv4());
+  // Configurar el hook de chat HTTP con callbacks estables
+  const sessionUuidRef = useRef<string>(uuidv4());
+  const currentResponseIdRef = useRef<string | null>(null);
 
-const { sendMessage: sendChatMessage, isLoading: isChatLoading, isConnected } = useChatApi({
+  const handleMessage = useCallback((messageChunk: string) => {
+    console.log('Chunk recibido:', messageChunk);
+    
+    setMessages(prev => {
+      // Si es el primer chunk de una nueva respuesta, crear un nuevo mensaje
+      if (!currentResponseIdRef.current) {
+        currentResponseIdRef.current = Date.now().toString();
+        const newBotMessage: Message = {
+          id: currentResponseIdRef.current,
+          content: messageChunk,
+          isUser: false,
+          timestamp: new Date()
+        };
+        return [...prev, newBotMessage];
+      } else {
+        // Si es un chunk adicional, agregar al último mensaje del bot
+        return prev.map(msg => 
+          msg.id === currentResponseIdRef.current && !msg.isUser
+            ? { ...msg, content: msg.content + messageChunk }
+            : msg
+        );
+      }
+    });
+  }, []);
+
+  const handleError = useCallback((error: Error) => {
+    console.error('Error en chat AiGO:', error);
+    const errorMessage: Message = {
+      id: Date.now().toString(),
+      content: 'Lo siento, hubo un problema de conexión.',
+      isUser: false,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, errorMessage]);
+  }, []);
+
+  const handleConnectionChange = useCallback((connected: boolean) => {
+    console.log(`Chat HTTP ${connected ? 'inicializado' : 'desconectado'}`);
+    
+    // Enviar saludo inicial automáticamente cuando se inicialice
+    if (connected && !hasInitialized.current) {
+      hasInitialized.current = true;
+      console.log('Chat HTTP inicializado, enviando mensaje inicial...');
+      
+      setTimeout(() => {
+        if (sendChatMessageRef.current) {
+          // Resetear el ID de respuesta para el mensaje inicial
+          currentResponseIdRef.current = null;
+          // Enviar un mensaje simple de saludo para activar la bienvenida del servidor
+          sendChatMessageRef.current('Hola').catch((error) => {
+            console.error('Error enviando mensaje inicial:', error);
+          });
+        }
+      }, 500);
+    }
+  }, []);
+
+  const { sendMessage: sendChatMessage, isLoading: isChatLoading, isConnected } = useChatApi({
     sessionId: sessionUuidRef.current,
     fullName: user?.name || 'Usuario',
-    onMessage: (messageContent: string) => {
-        // Agregar la respuesta del bot a los mensajes
-        const botResponse: Message = {
-            id: Date.now().toString(),
-            content: messageContent,
-            isUser: false,
-            timestamp: new Date()
-        };
-        setMessages(prev => [...prev, botResponse]);
-    },
-    onError: (error) => {
-        console.error('Error en chat AiGO:', error);
-        // Agregar mensaje de error
-        const errorMessage: Message = {
-            id: Date.now().toString(),
-            content: 'Lo siento, hubo un problema de conexión.',
-            isUser: false,
-            timestamp: new Date()
-        };
-        setMessages(prev => [...prev, errorMessage]);
-    },
-    onConnectionChange: (connected) => {
-        console.log(`WebSocket ${connected ? 'conectado' : 'desconectado'}`);
-        
-        // Enviar saludo inicial automáticamente cuando se conecte
-        if (connected && !hasInitialized.current) {
-            hasInitialized.current = true;
-            // Enviar "hola" en background para obtener el saludo de bienvenida del servidor
-            setTimeout(() => {
-                sendChatMessage('hola').catch(console.error);
-            }, 500); // Small delay para asegurar que la conexión esté completamente establecida
-        }
-    }
-});
+    onMessage: handleMessage,
+    onError: handleError,
+    onConnectionChange: handleConnectionChange
+  });
+
+  // Mantener referencia al sendMessage para evitar dependencias circulares
+  const sendChatMessageRef = useRef(sendChatMessage);
+  sendChatMessageRef.current = sendChatMessage;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -91,8 +123,11 @@ const { sendMessage: sendChatMessage, isLoading: isChatLoading, isConnected } = 
     const messageToSend = inputMessage;
     setInputMessage('');
 
+    // Resetear el ID de respuesta para la nueva respuesta
+    currentResponseIdRef.current = null;
+
     try {
-      // Con WebSocket, el mensaje se envía y la respuesta llegará por onMessage callback
+      // Con HTTP streaming, el mensaje se envía y la respuesta llegará por chunks
       await sendChatMessage(messageToSend);
     } catch (error) {
       const errorMessage: Message = {
@@ -124,8 +159,32 @@ const { sendMessage: sendChatMessage, isLoading: isChatLoading, isConnected } = 
     "Necesito ayuda con el dashboard"
   ];
 
-  const handleQuickAction = (action: string) => {
-    setInputMessage(action);
+  const handleQuickAction = async (action: string) => {
+    setInputMessage('');
+    
+    // Resetear el ID de respuesta para la nueva respuesta
+    currentResponseIdRef.current = null;
+    
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: action,
+      isUser: true,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+
+    try {
+      await sendChatMessage(action);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, inténtalo de nuevo.',
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    }
   };
 
   return (

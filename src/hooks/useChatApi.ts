@@ -7,6 +7,11 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+interface MessageInput {
+  message: string;
+  full_name: string;
+}
+
 interface UseChatApiOptions {
   sessionId?: string;
   fullName?: string;
@@ -17,128 +22,140 @@ interface UseChatApiOptions {
 
 export const useChatApi = (options: UseChatApiOptions = {}) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const websocketRef = useRef<WebSocket | null>(null);
-  const messageQueueRef = useRef<string[]>([]);
-
-  const sessionId = options.sessionId || 'session_123';
-  const fullName = options.fullName || 'Usuario';
+  const [isConnected, setIsConnected] = useState(true); // HTTP siempre está "conectado"
+  const abortControllerRef = useRef<AbortController | null>(null);
   
-  // Crear URL del WebSocket
-  const wsUrl = `ws://localhost:8010/ws/chat/${sessionId}?full_name=${encodeURIComponent(fullName)}`;
+  // Usar refs para callbacks para evitar re-renders
+  const onMessageRef = useRef(options.onMessage);
+  const onErrorRef = useRef(options.onError);
+  const onConnectionChangeRef = useRef(options.onConnectionChange);
 
-  const connectWebSocket = useCallback(() => {
-    try {
-      // Cerrar conexión existente si existe
-      if (websocketRef.current) {
-        websocketRef.current.close();
-      }
+  // Actualizar refs cuando cambien las opciones
+  useEffect(() => {
+    onMessageRef.current = options.onMessage;
+    onErrorRef.current = options.onError;
+    onConnectionChangeRef.current = options.onConnectionChange;
+  }, [options.onMessage, options.onError, options.onConnectionChange]);
 
-      websocketRef.current = new WebSocket(wsUrl);
+  const fullName = options.fullName || 'Usuario';
+  const sessionId = options.sessionId || 'default';
+  
+  // URL del endpoint HTTP
+  const chatUrl = `http://localhost:8010/direct/chat/${sessionId}`;
 
-      websocketRef.current.onopen = () => {
-        console.log('WebSocket conectado a AiGO');
-        setIsConnected(true);
-        options.onConnectionChange?.(true);
-        
-        // Enviar mensajes en cola si los hay
-        while (messageQueueRef.current.length > 0) {
-          const message = messageQueueRef.current.shift();
-          if (message && websocketRef.current?.readyState === WebSocket.OPEN) {
-            websocketRef.current.send(JSON.stringify({
-              message: message,
-              timestamp: new Date().toISOString()
-            }));
-          }
-        }
-      };
-
-      websocketRef.current.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          // El mensaje viene directamente del servidor
-          options.onMessage?.(data.message || data.response || event.data);
-          setIsLoading(false);
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-          options.onMessage?.(event.data); // Usar el mensaje como texto plano si no es JSON
-          setIsLoading(false);
-        }
-      };
-
-      websocketRef.current.onclose = () => {
-        console.log('WebSocket desconectado de AiGO');
-        setIsConnected(false);
-        setIsLoading(false);
-        options.onConnectionChange?.(false);
-      };
-
-      websocketRef.current.onerror = (error) => {
-        console.error('Error en WebSocket:', error);
-        setIsLoading(false);
-        const wsError = new Error('Error de conexión con el servidor de chat');
-        options.onError?.(wsError);
-      };
-
-    } catch (error) {
-      console.error('Error al conectar WebSocket:', error);
-      setIsLoading(false);
-      options.onError?.(error as Error);
-    }
-  }, [wsUrl, options]);
-
+  // Función para enviar mensaje usando fetch con streaming
   const sendMessage = useCallback(async (message: string): Promise<void> => {
-    if (!message.trim()) return;
+    if (!message.trim()) {
+      console.warn('Intento de enviar mensaje vacío');
+      return;
+    }
 
+    console.log('Enviando mensaje:', message);
     setIsLoading(true);
 
+    // Cancelar request anterior si existe
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Crear nuevo AbortController
+    abortControllerRef.current = new AbortController();
+
     try {
-      if (websocketRef.current?.readyState === WebSocket.OPEN) {
-        // Enviar mensaje inmediatamente si la conexión está abierta
-        websocketRef.current.send(JSON.stringify({
-          message: message,
-          timestamp: new Date().toISOString()
-        }));
-      } else {
-        // Agregar a cola si no está conectado
-        messageQueueRef.current.push(message);
-        
-        // Intentar reconectar si no está conectado
-        if (!isConnected) {
-          connectWebSocket();
-        }
+      const requestBody: MessageInput = {
+        message: message.trim(),
+        full_name: fullName
+      };
+
+      console.log('Payload a enviar:', requestBody);
+
+      const response = await fetch(chatUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        signal: abortControllerRef.current.signal
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
       }
+
+      if (!response.body) {
+        throw new Error('No se recibió respuesta del servidor');
+      }
+
+      // Leer el stream de respuesta
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedMessage = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            break;
+          }
+
+          const chunk = decoder.decode(value, { stream: true });
+          accumulatedMessage += chunk;
+          
+          // Enviar cada chunk al callback
+          onMessageRef.current?.(chunk);
+        }
+
+        console.log('Mensaje completo recibido:', accumulatedMessage);
+        setIsLoading(false);
+
+      } catch (streamError) {
+        console.error('Error leyendo stream:', streamError);
+        setIsLoading(false);
+        throw streamError;
+      } finally {
+        reader.releaseLock();
+      }
+
     } catch (error) {
       console.error('Error enviando mensaje:', error);
       setIsLoading(false);
-      throw new Error('Error al enviar mensaje. Por favor, inténtalo de nuevo.');
+      
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Request cancelado');
+        return;
+      }
+      
+      onErrorRef.current?.(error as Error);
+      throw error;
     }
-  }, [isConnected, connectWebSocket]);
+  }, [chatUrl, fullName]);
 
   const disconnect = useCallback(() => {
-    if (websocketRef.current) {
-      websocketRef.current.close();
-      websocketRef.current = null;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
-    setIsConnected(false);
     setIsLoading(false);
   }, []);
 
-  // Conectar automáticamente al montar el componente
+  // Simular conexión inmediata para HTTP
   useEffect(() => {
-    connectWebSocket();
+    console.log('Chat HTTP API inicializado');
+    setIsConnected(true);
+    onConnectionChangeRef.current?.(true);
 
     // Cleanup al desmontar
     return () => {
       disconnect();
     };
-  }, [connectWebSocket, disconnect]);
+  }, [disconnect]);
 
   return {
     sendMessage,
     isLoading,
     isConnected,
-    connect: connectWebSocket,
+    connect: () => { /* No necesario para HTTP */ },
     disconnect
   };
 };
