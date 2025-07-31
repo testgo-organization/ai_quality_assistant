@@ -10,6 +10,7 @@ class Settings:
     # OpenAI
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
     ASSISTANT_ID: str = os.getenv("ASSISTANT_ID")
+    VECTOR_STORE_ID: str = os.getenv("VECTOR_STORE_ID", "vs_688943d84c488191aa0c47fffd1eb866")
     
     # Servidor
     HOST: str = os.getenv("HOST", "0.0.0.0")

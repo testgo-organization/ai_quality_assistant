@@ -16,7 +16,7 @@ from .infrastructure.websocket_manager import WebSocketManager
 from .domain.services import ConversationService, MessageService
 
 # Importar routers
-from .api import health, chat
+from .api import health, chat, direct_chat
 
 # Configurar logging
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
@@ -55,6 +55,7 @@ chat.session_store = session_store
 # Incluir routers
 app.include_router(health.router)
 app.include_router(chat.router)
+app.include_router(direct_chat.router)
 
 logger.info("AiGO Streaming API v2.0 iniciada correctamente")
 
