@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 import logging
+from app.db.mongo import mongo_collection
 
 from ..domain.direct_service import DirectAiGOService
 
@@ -17,13 +18,13 @@ router = APIRouter(prefix="/direct", tags=["direct-chat"])
 # Instancia del servicio
 direct_service = DirectAiGOService()
 
-
 class MessageInput(BaseModel):
     """Modelo para entrada de mensajes"""
 
     message: str
     full_name: str
     session_id: Optional[str] = "default"
+    user_id: Optional[str] = None  # Nuevo campo para el id de usuario
 
 
 @router.post("/chat/{session_id}")
@@ -57,6 +58,15 @@ async def chat_complete(session_id: str, input: MessageInput):
         result = await direct_service.process_message(
             session_id, input.message, input.full_name
         )
+        # Guardar en MongoDB si existe function_data
+        if result.get("function_data"):
+            mongo_collection.insert_one({
+                "session_id": session_id,
+                "user_id": input.user_id,
+                "full_name": input.full_name,
+                "message": input.message,
+                "function_data": result["function_data"]
+            })
         return result
 
     except Exception as e:
@@ -188,9 +198,9 @@ async def test_client():
                     if (response.ok) {
                         const result = await response.json();
                         const sessions = result.sessions;
-                        let sessionList = 'Sesiones activas:\\n';
+                        let sessionList = 'Sesiones activas:\n';
                         for (const [id, info] of Object.entries(sessions)) {
-                            sessionList += `- ${id}: ${info.full_name} (${info.message_count} mensajes)\\n`;
+                            sessionList += `- ${id}: ${info.full_name} (${info.message_count} mensajes)\n`;
                         }
                         addSystemMessage(sessionList || 'No hay sesiones activas');
                     }

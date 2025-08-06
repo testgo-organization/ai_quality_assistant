@@ -13,6 +13,7 @@ websockets = "^15.0.1"
 openai = "^1.97.1"
 python-multipart = "^0.0.20"
 python-dotenv = "^1.1.1"
+pymongo = "^4.14.0"
 
 
 [build-system]
