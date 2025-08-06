@@ -2,12 +2,12 @@
 Endpoint directo de chat AiGO - Implementación simple basada en open_ai_main.py
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 import logging
-from app.db.mongo import mongo_collection
+from app.db.dynamodb import put_conversation_item
 
 from ..domain.direct_service import DirectAiGOService
 
@@ -24,16 +24,24 @@ class MessageInput(BaseModel):
     message: str
     full_name: str
     session_id: Optional[str] = "default"
-    user_id: Optional[str] = None  # Nuevo campo para el id de usuario
+    # No incluir user_id aquí
 
 
 @router.post("/chat/{session_id}")
-async def chat(session_id: str, input: MessageInput):
+async def chat(session_id: str, input: MessageInput, x_user_id: str = Header(...)):
     """
     Endpoint de chat directo con streaming y mantenimiento de sesión
     Implementación basada en open_ai_main.py
     """
     try:
+        # Guardar inicio de conversación en MongoDB
+        put_conversation_item({
+            "session_id": session_id,
+            "user_id": x_user_id,
+            "full_name": input.full_name,
+            "message": input.message,
+            "type": "start"
+        })
 
         def stream_response():
             for chunk in direct_service.stream_chat_response(
@@ -49,7 +57,7 @@ async def chat(session_id: str, input: MessageInput):
 
 
 @router.post("/chat/{session_id}/complete")
-async def chat_complete(session_id: str, input: MessageInput):
+async def chat_complete(session_id: str, input: MessageInput, x_user_id: str = Header(...)):
     """
     Endpoint de chat completo (sin streaming) con mantenimiento de sesión
     Retorna respuesta completa con información de funciones
@@ -60,9 +68,9 @@ async def chat_complete(session_id: str, input: MessageInput):
         )
         # Guardar en MongoDB si existe function_data
         if result.get("function_data"):
-            mongo_collection.insert_one({
+            put_conversation_item({
                 "session_id": session_id,
-                "user_id": input.user_id,
+                "user_id": x_user_id,
                 "full_name": input.full_name,
                 "message": input.message,
                 "function_data": result["function_data"]
@@ -232,7 +240,8 @@ async def test_client():
                         },
                         body: JSON.stringify({
                             message: message,
-                            full_name: fullName
+                            full_name: fullName,
+                            user_id: document.getElementById('userId').value
                         })
                     });
                     

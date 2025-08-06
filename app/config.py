@@ -23,15 +23,11 @@ class Settings:
     # CORS
     ALLOWED_ORIGINS: list = os.getenv("ALLOWED_ORIGINS", "*").split(",")
     
-    # MongoDB
-    MONGO_USER = os.environ.get("MONGO_USER", "usuario_app")
-    MONGO_PASSWORD = os.environ.get("MONGO_PASSWORD", "tucontrasena")
-    MONGO_HOST = os.environ.get("MONGO_HOST", "localhost")
-    MONGO_PORT = os.environ.get("MONGO_PORT", "27017")
-    MONGO_DB = os.environ.get("MONGO_DB", "testgoai")
-    MONGO_COLLECTION = os.environ.get("MONGO_COLLECTION", "conversations")
-
-    MONGO_URI = f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB}"
+    # DynamoDB
+    DYNAMODB_REGION = os.environ.get("DYNAMODB_REGION")
+    DYNAMODB_ACCESS_KEY = os.environ.get("DYNAMODB_ACCESS_KEY")
+    DYNAMODB_SECRET_KEY = os.environ.get("DYNAMODB_SECRET_KEY")
+    DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE")
     
     # Validación
     def validate(self):
