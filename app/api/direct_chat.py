@@ -1,6 +1,7 @@
 """
 Endpoint directo de chat AiGO - Implementación simple basada en open_ai_main.py
 """
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -19,6 +20,7 @@ direct_service = DirectAiGOService()
 
 class MessageInput(BaseModel):
     """Modelo para entrada de mensajes"""
+
     message: str
     full_name: str
     session_id: Optional[str] = "default"
@@ -31,12 +33,15 @@ async def chat(session_id: str, input: MessageInput):
     Implementación basada en open_ai_main.py
     """
     try:
+
         def stream_response():
-            for chunk in direct_service.stream_chat_response(session_id, input.message, input.full_name):
+            for chunk in direct_service.stream_chat_response(
+                session_id, input.message, input.full_name
+            ):
                 yield chunk
-        
+
         return StreamingResponse(stream_response(), media_type="text/plain")
-        
+
     except Exception as e:
         logger.error(f"Error en chat directo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -49,9 +54,11 @@ async def chat_complete(session_id: str, input: MessageInput):
     Retorna respuesta completa con información de funciones
     """
     try:
-        result = await direct_service.process_message(session_id, input.message, input.full_name)
+        result = await direct_service.process_message(
+            session_id, input.message, input.full_name
+        )
         return result
-        
+
     except Exception as e:
         logger.error(f"Error en chat completo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -314,6 +321,7 @@ async def test_client():
     </body>
     </html>
     """
-    
+
     from fastapi.responses import HTMLResponse
+
     return HTMLResponse(content=html_content)
