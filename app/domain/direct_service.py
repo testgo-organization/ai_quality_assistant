@@ -6,6 +6,7 @@ import logging
 from typing import Iterator, Optional, Dict, Any, List
 from openai import OpenAI
 from ..config import settings
+from app.db.dynamodb import put_model_context
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +170,7 @@ class DirectAiGOService:
 
     def stream_chat_response(
         self, session_id: str, message: str, full_name: str
-    ) -> Iterator[str]:
+    ) -> Iterator[tuple[str, Optional[dict]]]:
         """
         Genera respuesta streaming usando OpenAI Chat Completions con historial
 
@@ -179,7 +180,7 @@ class DirectAiGOService:
             full_name: Nombre completo del usuario
 
         Yields:
-            str: Fragmentos de la respuesta en streaming
+            tuple: Fragmentos de la respuesta en streaming y datos recopilados (si los hay)
         """
         try:
             # Obtener o crear sesión
@@ -215,7 +216,7 @@ class DirectAiGOService:
 
                             # Mostrar el contenido de la respuesta si existe
                             if check_response.choices[0].message.content:
-                                yield check_response.choices[0].message.content
+                                yield check_response.choices[0].message.content, None
 
                             # Procesar los datos de la función
                             try:
@@ -223,41 +224,6 @@ class DirectAiGOService:
 
                                 datos_recopilados = json.loads(
                                     tool_call.function.arguments
-                                )
-
-                                logger.info(
-                                    f"=== DATOS RECOPILADOS EN SESIÓN {session_id} ==="
-                                )
-                                logger.info(f"Usuario: {full_name}")
-                                logger.info(f"Tool Call ID: {tool_call.id}")
-
-                                # Log campo por campo para mejor legibilidad
-                                logger.info(
-                                    f"📋 SERVICIO: {datos_recopilados.get('servicio', 'N/A')}"
-                                )
-                                logger.info(
-                                    f"📢 CAMPAÑA: {datos_recopilados.get('campaña', 'N/A')}"
-                                )
-                                logger.info(
-                                    f"📞 TIPO GESTIÓN: {datos_recopilados.get('tipo_gestion', 'N/A')}"
-                                )
-                                logger.info(
-                                    f"⏱️ TIEMPO ESPERA: {datos_recopilados.get('tiempo_espera_aprobado_segundos', 'N/A')} segundos"
-                                )
-                                logger.info(
-                                    f"🚫 ERRORES GRAVES CLIENTE: {datos_recopilados.get('errores_graves_cliente', [])}"
-                                )
-                                logger.info(
-                                    f"🏢 ERRORES GRAVES NEGOCIO: {datos_recopilados.get('errores_graves_negocio', {})}"
-                                )
-                                logger.info(
-                                    f"⚠️ ERRORES NO GRAVES: {datos_recopilados.get('errores_no_graves', [])}"
-                                )
-                                logger.info(
-                                    f"💬 PROTOCOLO: {datos_recopilados.get('protocolo', {})}"
-                                )
-                                logger.info(
-                                    f"📊 REGLAS EVALUACIÓN: {datos_recopilados.get('reglas_evaluacion', {})}"
                                 )
 
                                 logger.info(f"=== JSON COMPLETO FORMATEADO ===")
@@ -268,7 +234,7 @@ class DirectAiGOService:
 
                                 # Agregar despedida amigable
                                 despedida = f"\n\n¡Perfecto, {full_name}! 🎉 He recopilado toda la información necesaria para configurar tu auditoría de llamadas. Ha sido un placer ayudarte en este proceso. ¡Que tengas un excelente día y mucho éxito con tu sistema de calidad! 😊"
-                                yield despedida
+                                yield despedida, datos_recopilados
 
                                 # Agregar respuesta al historial
                                 full_response = (
@@ -285,7 +251,7 @@ class DirectAiGOService:
                                 logger.error(
                                     f"Argumentos problemáticos: '{tool_call.function.arguments}'"
                                 )
-                                yield f"\n\n[Error procesando datos de configuración]"
+                                yield f"\n\n[Error procesando datos de configuración]", None
                                 return
 
             except Exception as e:
@@ -313,7 +279,7 @@ class DirectAiGOService:
                     if chunk.choices[0].delta.content:
                         content_chunk = chunk.choices[0].delta.content
                         response_content += content_chunk
-                        yield content_chunk
+                        yield content_chunk, None
 
             # Agregar respuesta del asistente al historial
             if response_content:
@@ -321,139 +287,4 @@ class DirectAiGOService:
 
         except Exception as e:
             logger.error(f"Error en streaming de respuesta: {e}")
-            yield f"Error: {str(e)}"
-
-    async def process_message(
-        self, session_id: str, message: str, full_name: str
-    ) -> Dict[str, Any]:
-        """
-        Procesa un mensaje y retorna información completa con historial
-
-        Args:
-            session_id: ID de la sesión
-            message: Mensaje del usuario
-            full_name: Nombre completo del usuario
-
-        Returns:
-            Dict con información de la respuesta y posibles llamadas a funciones
-        """
-        try:
-            # Obtener o crear sesión
-            session = self.get_or_create_session(session_id, full_name)
-
-            # Agregar mensaje del usuario al historial
-            session.add_message("user", f"{full_name}: {message}")
-
-            # Construir mensajes con historial
-            messages = [{"role": "system", "content": self.system_prompt}]
-            messages.extend(session.get_messages())
-
-            response = self.client.chat.completions.create(
-                model="gpt-4-1106-preview",
-                messages=messages,
-                tools=[{"type": "function", "function": self.function_schema}],
-                tool_choice="auto",
-                temperature=0.7,
-                top_p=1.0,
-                max_tokens=1000,
-            )
-
-            choice = response.choices[0]
-            result = {
-                "content": choice.message.content,
-                "finish_reason": choice.finish_reason,
-                "tool_calls": None,
-                "function_data": None,
-                "session_id": session_id,
-                "message_count": len(session.messages) + 1,
-            }
-
-            # Agregar respuesta del asistente al historial
-            if choice.message.content:
-                session.add_message("assistant", choice.message.content)
-
-            # Procesar llamadas a funciones
-            if choice.message.tool_calls:
-                result["tool_calls"] = []
-                for tool_call in choice.message.tool_calls:
-                    tool_info = {
-                        "id": tool_call.id,
-                        "function_name": tool_call.function.name,
-                        "arguments": tool_call.function.arguments,
-                    }
-                    result["tool_calls"].append(tool_info)
-
-                    # Si es generar_json_final, parsear los datos (solo logging)
-                    if tool_call.function.name == "generar_json_final":
-                        import json
-
-                        try:
-                            function_data = json.loads(tool_call.function.arguments)
-                            result["function_data"] = function_data
-
-                            # Logging detallado de los datos recopilados
-                            logger.info(f"=== FUNCIÓN GENERAR_JSON_FINAL EJECUTADA ===")
-                            logger.info(f"Sesión: {session_id}")
-                            logger.info(f"Usuario: {full_name}")
-                            logger.info(f"=== DATOS RECOPILADOS COMPLETOS ===")
-                            logger.info(
-                                f"Servicio: {function_data.get('servicio', 'N/A')}"
-                            )
-                            logger.info(
-                                f"Campaña: {function_data.get('campaña', 'N/A')}"
-                            )
-                            logger.info(
-                                f"Tipo de gestión: {function_data.get('tipo_gestion', 'N/A')}"
-                            )
-                            logger.info(
-                                f"Tiempo espera (seg): {function_data.get('tiempo_espera_aprobado_segundos', 'N/A')}"
-                            )
-                            logger.info(
-                                f"Errores graves cliente: {function_data.get('errores_graves_cliente', [])}"
-                            )
-                            logger.info(
-                                f"Errores graves negocio: {function_data.get('errores_graves_negocio', {})}"
-                            )
-                            logger.info(
-                                f"Errores no graves: {function_data.get('errores_no_graves', [])}"
-                            )
-                            logger.info(
-                                f"Protocolo: {function_data.get('protocolo', {})}"
-                            )
-                            logger.info(
-                                f"Reglas evaluación: {function_data.get('reglas_evaluacion', {})}"
-                            )
-                            logger.info(f"=== JSON COMPLETO ===")
-                            # TODO: llevar este json a la BD
-                            logger.info(
-                                f"{json.dumps(function_data, indent=2, ensure_ascii=False)}"
-                            )
-                            logger.info(f"=== FIN DATOS SESIÓN {session_id} ===")
-
-                            # Agregar despedida amigable al contenido
-                            despedida = f"\n\n¡Perfecto, {full_name}! 🎉 He recopilado toda la información necesaria para configurar tu auditoría de llamadas. Ha sido un placer ayudarte en este proceso. ¡Que tengas un excelente día y mucho éxito con tu sistema de calidad! 😊"
-                            if result["content"]:
-                                result["content"] += despedida
-                            else:
-                                result["content"] = despedida.strip()
-
-                        except json.JSONDecodeError as e:
-                            logger.error(
-                                f"Error parseando datos de generar_json_final en sesión {session_id}: {e}"
-                            )
-                            logger.error(
-                                f"Argumentos recibidos: {tool_call.function.arguments}"
-                            )
-
-            return result
-
-        except Exception as e:
-            logger.error(f"Error procesando mensaje: {e}")
-            return {
-                "content": f"Error: {str(e)}",
-                "finish_reason": "error",
-                "tool_calls": None,
-                "function_data": None,
-                "session_id": session_id,
-                "message_count": 0,
-            }
+            yield f"Error: {str(e)}", None

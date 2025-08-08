@@ -2,12 +2,13 @@
 Endpoint directo de chat AiGO - Implementación simple basada en open_ai_main.py
 """
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 import logging
-from app.db.dynamodb import put_conversation_item
+from app.db.dynamodb import put_conversation_item, put_model_context
+from app.shared.dependencies import get_current_user
 
 from ..domain.direct_service import DirectAiGOService
 
@@ -22,63 +23,53 @@ class MessageInput(BaseModel):
     """Modelo para entrada de mensajes"""
 
     message: str
-    full_name: str
-    session_id: Optional[str] = "default"
-    # No incluir user_id aquí
 
 
 @router.post("/chat/{session_id}")
-async def chat(session_id: str, input: MessageInput, x_user_id: str = Header(...)):
+async def chat(session_id: str, input: MessageInput, user=Depends(get_current_user)):
     """
     Endpoint de chat directo con streaming y mantenimiento de sesión
     Implementación basada en open_ai_main.py
     """
     try:
-        # Guardar inicio de conversación en MongoDB
+        # Guardar mensaje del usuario
         put_conversation_item({
             "session_id": session_id,
-            "user_id": x_user_id,
-            "full_name": input.full_name,
+            "user_id": user["user_id"],
+            "full_name": user["full_name"],
             "message": input.message,
-            "type": "start"
+            "role": "user"
         })
 
         def stream_response():
-            for chunk in direct_service.stream_chat_response(
-                session_id, input.message, input.full_name
+            # Acumula la respuesta completa del asistente
+            ai_response = ""
+            datos_recopilados = None
+            for chunk, datos in direct_service.stream_chat_response(
+                session_id, input.message, user["full_name"]
             ):
+                ai_response += chunk
                 yield chunk
+                if datos is not None:
+                    datos_recopilados = datos
+            # Al finalizar el streaming, guarda la respuesta completa como role "ai"
+            if ai_response.strip():
+                put_conversation_item({
+                    "session_id": session_id,
+                    "user_id": user["user_id"],
+                    "full_name": user["full_name"],
+                    "message": ai_response,
+                    "role": "ai"
+                })
+            # Si hay datos recopilados, guarda el model_context
+            if datos_recopilados:
+                put_model_context(user["user_id"], session_id, datos_recopilados)
+                direct_service.clear_session(session_id)
 
         return StreamingResponse(stream_response(), media_type="text/plain")
 
     except Exception as e:
         logger.error(f"Error en chat directo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/chat/{session_id}/complete")
-async def chat_complete(session_id: str, input: MessageInput, x_user_id: str = Header(...)):
-    """
-    Endpoint de chat completo (sin streaming) con mantenimiento de sesión
-    Retorna respuesta completa con información de funciones
-    """
-    try:
-        result = await direct_service.process_message(
-            session_id, input.message, input.full_name
-        )
-        # Guardar en MongoDB si existe function_data
-        if result.get("function_data"):
-            put_conversation_item({
-                "session_id": session_id,
-                "user_id": x_user_id,
-                "full_name": input.full_name,
-                "message": input.message,
-                "function_data": result["function_data"]
-            })
-        return result
-
-    except Exception as e:
-        logger.error(f"Error en chat completo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

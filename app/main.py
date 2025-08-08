@@ -2,6 +2,7 @@
 Aplicación principal FastAPI - Configuración y enrutado
 """
 from fastapi import FastAPI
+from mangum import Mangum
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import uvicorn
@@ -59,6 +60,12 @@ app.include_router(direct_chat.router)
 
 logger.info("AiGO Streaming API v2.0 iniciada correctamente")
 
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+# Este es el handler que AWS Lambda buscará.
+handler = Mangum(app)
 
 if __name__ == "__main__":
     uvicorn.run(
