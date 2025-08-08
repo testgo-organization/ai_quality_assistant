@@ -9,15 +9,8 @@ import uvicorn
 
 # Importar configuración
 from .config import settings
-
-# Importar capas
-from .infrastructure.openai_client import OpenAIClient
-from .infrastructure.session_store import SessionStore
-from .infrastructure.websocket_manager import WebSocketManager
-from .domain.services import ConversationService, MessageService
-
 # Importar routers
-from .api import health, chat, direct_chat
+from .api import health, direct_chat
 
 # Configurar logging
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
@@ -42,20 +35,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Inicializar dependencias
-openai_client = OpenAIClient()
-session_store = SessionStore()
-message_service = MessageService()
-conversation_service = ConversationService(openai_client, session_store)
-websocket_manager = WebSocketManager(conversation_service, openai_client, message_service)
-
-# Inyectar dependencias en los routers
-chat.websocket_manager = websocket_manager
-chat.session_store = session_store
-
 # Incluir routers
 app.include_router(health.router)
-app.include_router(chat.router)
 app.include_router(direct_chat.router)
 
 logger.info("AiGO Streaming API v2.0 iniciada correctamente")
