@@ -22,6 +22,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onOpenChange }) => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -58,7 +60,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onOpenChange }) => {
       const response = await fetch(`${API_BASE_URL}user/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, name, last_name: lastName }),
       });
 
       if (!response.ok) {
@@ -67,8 +69,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onOpenChange }) => {
       }
 
       // Después de registrar, intentar hacer login automáticamente
-      await handleLogin(e);
+      await login(email, password);
 
+      onOpenChange(false);
+      setEmail('');
+      setPassword('');
+      setName('');
+      setLastName('');
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -126,6 +133,27 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onOpenChange }) => {
           <TabsContent value="register">
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="register-name">Nombre</Label>
+                <Input
+                  id="register-name"
+                  type="text"
+                  placeholder="Nombre"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="register-lastname">Apellido (opcional)</Label>
+                <Input
+                  id="register-lastname"
+                  type="text"
+                  placeholder="Apellido"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="register-email">Email</Label>
                 <Input
                   id="register-email"
@@ -158,4 +186,4 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onOpenChange }) => {
   );
 };
 
-export default AuthModal; 
+export default AuthModal;

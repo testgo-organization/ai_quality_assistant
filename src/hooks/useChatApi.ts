@@ -15,6 +15,7 @@ interface MessageInput {
 interface UseChatApiOptions {
   sessionId?: string;
   fullName?: string;
+  userId?: string; // Nuevo campo para el user_id
   onMessage?: (message: string) => void;
   onError?: (error: Error) => void;
   onConnectionChange?: (connected: boolean) => void;
@@ -39,6 +40,7 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
 
   const fullName = options.fullName || 'Usuario';
   const sessionId = options.sessionId || 'default';
+  const userId = options.userId;
   
   // URL del endpoint HTTP
   const chatUrl = `http://localhost:8010/direct/chat/${sessionId}`;
@@ -73,6 +75,7 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(userId ? { 'X-User-Id': userId } : {}) // Aquí se envía el user_id al backend AiGO
         },
         body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal
@@ -129,7 +132,7 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
       onErrorRef.current?.(error as Error);
       throw error;
     }
-  }, [chatUrl, fullName]);
+  }, [chatUrl, fullName, userId]);
 
   const disconnect = useCallback(() => {
     if (abortControllerRef.current) {

@@ -5,6 +5,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  last_name?: string;
   hasCompletedAiQualityOnboarding?: boolean;
 }
 
@@ -15,7 +16,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string, last_name?: string) => Promise<void>;
   getToken: () => string | null;
   isAuthModalOpen: boolean;
   openAuthModal: () => void;
@@ -114,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string, last_name?: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -123,6 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: '1',
         email,
         name,
+        last_name,
         hasCompletedAiQualityOnboarding: false
       };
       const mockToken = 'mock-jwt-token';
@@ -131,8 +133,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('user', JSON.stringify(mockUser));
       localStorage.setItem('auth_token', mockToken);
       setIsAuthModalOpen(false);
-      
-      // Mostrar chat de AiGO para nuevos usuarios
       setShowAiGoChat(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrarse');

@@ -92,6 +92,7 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
   const { sendMessage: sendChatMessage, isLoading: isChatLoading, isConnected } = useChatApi({
     sessionId: sessionUuidRef.current,
     fullName: user?.name || 'Usuario',
+    userId: user?.id, // Aquí se cruza el user_id del usuario logueado
     onMessage: handleMessage,
     onError: handleError,
     onConnectionChange: handleConnectionChange
