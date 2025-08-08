@@ -1,7 +1,7 @@
 # Ai## Características
 
 - 🔄 **Streaming en tiempo real** - Respuestas en vivo vía WebSocket
-- 🤖 **Integración OpenAI Assistant** - Conecta directamente con AiGO (asst_MhtIYnV2GIIGf2DK2)
+- 🤖 **Integración OpenAI Assistant** - Conecta directamente con AiGO
 - 🎯 **Manejo especial de `generar_json_final`** - Detecta y procesa automáticamente la función final
 - 👤 **Personalización por nombre** - El asistente puede personalizar respuestas usando el nombre del usuario
 - 📝 **Gestión de sesiones** - Mantiene conversaciones independientes con persistencia
@@ -15,7 +15,7 @@ API FastAPI para conversaciones streaming en tiempo real con el asistente AiGO d
 ## Características
 
 - 🔄 **Streaming en tiempo real** - Respuestas en vivo vía WebSocket
-- 🤖 **Integración OpenAI Assistant** - Conecta directamente con AiGO (asst_MhtIYnV2GIIGf2DK2)
+- 🤖 **Integración OpenAI Assistant** - Conecta directamente con AiGO
 - 🎯 **Manejo especial de `generar_json_final`** - Detecta y procesa automáticamente la función final
 - � **Personalización por nombre** - El asistente puede personalizar respuestas usando el nombre del usuario
 - �📝 **Gestión de sesiones** - Mantiene conversaciones independientes
@@ -312,7 +312,7 @@ async def get_new(service=Depends(get_new_service)):
 
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
-ASSISTANT_ID=asst_MhtIYnV2GIIGf2DK2
+VECTOR_STORE_ID=your_vector_store_id
 HOST=0.0.0.0
 PORT=8000
 DEBUG=True

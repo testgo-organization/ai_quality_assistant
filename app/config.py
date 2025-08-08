@@ -9,7 +9,6 @@ load_dotenv()
 class Settings:
     # OpenAI
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
-    ASSISTANT_ID: str = os.getenv("ASSISTANT_ID")
     VECTOR_STORE_ID: str = os.getenv("VECTOR_STORE_ID")
     
     # Servidor
@@ -38,8 +37,6 @@ class Settings:
     def validate(self):
         if not self.OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY es requerida")
-        if not self.ASSISTANT_ID:
-            raise ValueError("ASSISTANT_ID es requerido")
         if not self.JWT_SECRET_KEY or not isinstance(self.JWT_SECRET_KEY, str):
             raise ValueError("JWT_SECRET_KEY debe estar definido y ser un string")
 

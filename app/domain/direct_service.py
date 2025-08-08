@@ -6,7 +6,6 @@ import logging
 from typing import Iterator, Optional, Dict, Any, List
 from openai import OpenAI
 from ..config import settings
-from app.db.dynamodb import put_model_context
 
 logger = logging.getLogger(__name__)
 
