@@ -8,6 +8,8 @@ from typing import Dict, Optional
 from fastapi import WebSocket
 from ..domain.entities import WebSocketMessage, MessageType
 from ..domain.services import ConversationService, MessageService
+from app.db.dynamodb import put_conversation_item
+from app.shared.jwt_utils import decode_jwt_token
 
 logger = logging.getLogger(__name__)
 
@@ -25,17 +27,36 @@ class WebSocketManager:
     async def connect(self, websocket: WebSocket, session_id: str, 
                      full_name: Optional[str] = None) -> None:
         """Conectar nuevo cliente WebSocket"""
+        # Extraer JWT del header
+        token = websocket.headers.get("authorization")
+        if not token or not token.startswith("Bearer "):
+            await websocket.close(code=4401)
+            return
+        jwt_token = token.split(" ")[1]
+        claims = decode_jwt_token(jwt_token)
+        user_id = claims.get("sub")
+        user_full_name = claims.get("full_name") or full_name
+
         await websocket.accept()
         self.active_connections[session_id] = websocket
         
         # Iniciar conversación
         conversation = await self.conversation_service.start_conversation(
-            session_id, full_name
+            session_id, user_full_name
         )
-        
-        # Enviar mensaje de conexión
-        # connection_msg = self.message_service.create_connection_message(session_id)
-        # await self.send_message(session_id, connection_msg)
+
+        # Mensaje inicial automático "hola"
+        initial_message = "hola"
+        put_conversation_item({
+            "session_id": session_id,
+            "user_id": user_id,
+            "full_name": user_full_name,
+            "message": initial_message,
+            "role": "user",
+            "type": "start"
+        })
+        run_id = await self.conversation_service.send_message(session_id, initial_message)
+        await self._stream_response(session_id, run_id)
         
         logger.info(f"Cliente conectado: {session_id}")
     

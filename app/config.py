@@ -10,6 +10,7 @@ class Settings:
     # OpenAI
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
     ASSISTANT_ID: str = os.getenv("ASSISTANT_ID")
+    VECTOR_STORE_ID: str = os.getenv("VECTOR_STORE_ID")
     
     # Servidor
     HOST: str = os.getenv("HOST", "0.0.0.0")
@@ -22,11 +23,24 @@ class Settings:
     # CORS
     ALLOWED_ORIGINS: list = os.getenv("ALLOWED_ORIGINS", "*").split(",")
     
+    # DynamoDB
+    DYNAMODB_REGION = os.environ.get("DYNAMODB_REGION")
+    DYNAMODB_ACCESS_KEY = os.environ.get("DYNAMODB_ACCESS_KEY")
+    DYNAMODB_SECRET_KEY = os.environ.get("DYNAMODB_SECRET_KEY")
+    DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE")
+    
+    # JWT
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+    JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
+    JWT_AUDIENCE = os.environ.get("JWT_AUDIENCE")  # Opcional
+    
     # Validación
     def validate(self):
         if not self.OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY es requerida")
         if not self.ASSISTANT_ID:
             raise ValueError("ASSISTANT_ID es requerido")
+        if not self.JWT_SECRET_KEY or not isinstance(self.JWT_SECRET_KEY, str):
+            raise ValueError("JWT_SECRET_KEY debe estar definido y ser un string")
 
 settings = Settings()
