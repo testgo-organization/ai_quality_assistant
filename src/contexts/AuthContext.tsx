@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(savedToken);
     }
     setLoading(false);
+    // Quitar cualquier lógica que muestre el chat aquí
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -85,10 +86,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('auth_token', authToken);
       setIsAuthModalOpen(false);
-      
-      // Mostrar chat de AiGO si no ha completado el onboarding
+
+      // Mostrar chat de AiGO solo justo después de login exitoso
       if (!user.hasCompletedAiQualityOnboarding) {
         setShowAiGoChat(true);
+      } else {
+        setShowAiGoChat(false);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
@@ -133,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('user', JSON.stringify(mockUser));
       localStorage.setItem('auth_token', mockToken);
       setIsAuthModalOpen(false);
+      // Mostrar chat de AiGO solo justo después de registro exitoso
       setShowAiGoChat(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrarse');

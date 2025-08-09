@@ -22,7 +22,7 @@ interface AiGoChatProps {
 }
 
 const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
-  const { completeAiQualityOnboarding, user } = useAuth();
+  const { completeAiQualityOnboarding, user, getToken } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -91,8 +91,7 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
 
   const { sendMessage: sendChatMessage, isLoading: isChatLoading, isConnected } = useChatApi({
     sessionId: sessionUuidRef.current,
-    fullName: user?.name || 'Usuario',
-    userId: user?.id, // Aquí se cruza el user_id del usuario logueado
+    token: getToken(), // Llama a la función para obtener el token actual
     onMessage: handleMessage,
     onError: handleError,
     onConnectionChange: handleConnectionChange
@@ -190,8 +189,11 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[85vh] p-0 overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 border-0 shadow-2xl">
-        <div className="flex flex-col h-full">
+      <DialogContent
+        className="max-w-4xl h-[85vh] p-0 overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 border-0 shadow-2xl"
+        style={{ maxHeight: '85vh', display: 'flex', flexDirection: 'column' }} // Asegura layout flex
+      >
+        <div className="flex flex-col h-full" style={{ height: '85vh' }}>
           {/* Header con animación de gradiente */}
           <DialogHeader className="px-6 py-4 bg-gradient-to-r from-primary via-blue-600 to-secondary text-white border-b relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-blue-600/90 to-secondary/90 animate-pulse"></div>
@@ -228,96 +230,90 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
                   <div className={`w-2 h-2 rounded-full mr-1 ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
                   {isConnected ? 'Conectado' : 'Desconectado'}
                 </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                  className="text-white hover:bg-white/20 h-8 w-8 p-0 backdrop-blur-sm"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
               </div>
             </div>
           </DialogHeader>
 
           {/* Messages Area con mejor scroll */}
-          <ScrollArea className="flex-1 px-6 py-4 bg-gradient-to-b from-transparent to-blue-50/30">
-            <div className="space-y-4">
-              {/* Mensaje de inicialización cuando no hay mensajes */}
-              {messages.length === 0 && isConnected && (
-                <div className="flex gap-3 justify-start animate-in slide-in-from-bottom-2">
-                  <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center shadow-lg">
-                    <Bot className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="bg-white border border-gray-100 shadow-md rounded-2xl px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                      <span className="text-sm text-gray-500">AiGO se está inicializando...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {messages.map((message, index) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${message.isUser ? 'justify-end' : 'justify-start'} 
-                    animate-in slide-in-from-bottom-2 duration-300`}
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  {!message.isUser && (
+          <div className="flex-1 min-h-0"> {/* min-h-0 para que ScrollArea crezca correctamente */}
+            <ScrollArea className="h-full w-full px-6 py-4 bg-gradient-to-b from-transparent to-blue-50/30">
+              <div className="space-y-4">
+                {/* Mensaje de inicialización cuando no hay mensajes */}
+                {messages.length === 0 && isConnected && (
+                  <div className="flex gap-3 justify-start animate-in slide-in-from-bottom-2">
                     <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center shadow-lg">
                       <Bot className="w-5 h-5 text-white" />
                     </div>
-                  )}
-                  
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-md transition-all hover:shadow-lg ${
-                      message.isUser
-                        ? 'bg-gradient-to-r from-primary to-secondary text-white ml-auto transform hover:scale-105'
-                        : 'bg-white border border-gray-100 hover:border-gray-200'
-                    }`}
-                  >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    <p className={`text-xs mt-2 ${
-                      message.isUser ? 'text-white/70' : 'text-gray-500'
-                    }`}>
-                      {message.timestamp.toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </p>
-                  </div>
-
-                  {message.isUser && (
-                    <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center shadow-md">
-                      <User className="w-5 h-5 text-gray-600" />
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              {isChatLoading && (
-                <div className="flex gap-3 justify-start animate-in slide-in-from-bottom-2">
-                  <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center shadow-lg">
-                    <Bot className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="bg-white border border-gray-100 shadow-md rounded-2xl px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                      <span className="text-sm text-gray-500">AiGO está escribiendo...</span>
-                      <div className="flex gap-1">
-                        <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse"></div>
-                        <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                    <div className="bg-white border border-gray-100 shadow-md rounded-2xl px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        <span className="text-sm text-gray-500">AiGO se está inicializando...</span>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-            <div ref={messagesEndRef} />
-          </ScrollArea>
+                )}
+                
+                {messages.map((message, index) => (
+                  <div
+                    key={message.id}
+                    className={`flex gap-3 ${message.isUser ? 'justify-end' : 'justify-start'} 
+                      animate-in slide-in-from-bottom-2 duration-300`}
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    {!message.isUser && (
+                      <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center shadow-lg">
+                        <Bot className="w-5 h-5 text-white" />
+                      </div>
+                    )}
+                    
+                    <div
+                      className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-md transition-all hover:shadow-lg ${
+                        message.isUser
+                          ? 'bg-gradient-to-r from-primary to-secondary text-white ml-auto transform hover:scale-105'
+                          : 'bg-white border border-gray-100 hover:border-gray-200'
+                      }`}
+                    >
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                      <p className={`text-xs mt-2 ${
+                        message.isUser ? 'text-white/70' : 'text-gray-500'
+                      }`}>
+                        {message.timestamp.toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </p>
+                    </div>
+
+                    {message.isUser && (
+                      <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center shadow-md">
+                        <User className="w-5 h-5 text-gray-600" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {isChatLoading && (
+                  <div className="flex gap-3 justify-start animate-in slide-in-from-bottom-2">
+                    <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center shadow-lg">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="bg-white border border-gray-100 shadow-md rounded-2xl px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        <span className="text-sm text-gray-500">AiGO está escribiendo...</span>
+                        <div className="flex gap-1">
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse"></div>
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div ref={messagesEndRef} />
+            </ScrollArea>
+          </div>
 
           {/* Quick Actions - Solo mostrar después del primer mensaje del servidor */}
           {messages.length === 1 && !isChatLoading && !messages[0]?.isUser && (
@@ -375,7 +371,7 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
                 <Button
                   variant="outline"
                   onClick={() => onOpenChange(false)}
-                  className="text-sm hover:bg-gray-50 border-gray-200"
+                  className="text-sm border-gray-200"
                 >
                   Continuar más tarde
                 </Button>

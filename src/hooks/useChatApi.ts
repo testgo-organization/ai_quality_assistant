@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { AIGO_API_BASE_URL } from '@/config'; // Importa la URL base de AiGO
 
 interface ChatMessage {
   id: string;
@@ -9,13 +10,11 @@ interface ChatMessage {
 
 interface MessageInput {
   message: string;
-  full_name: string;
 }
 
 interface UseChatApiOptions {
   sessionId?: string;
-  fullName?: string;
-  userId?: string; // Nuevo campo para el user_id
+  token?: string; // Nuevo campo para el token de sesión
   onMessage?: (message: string) => void;
   onError?: (error: Error) => void;
   onConnectionChange?: (connected: boolean) => void;
@@ -38,12 +37,11 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
     onConnectionChangeRef.current = options.onConnectionChange;
   }, [options.onMessage, options.onError, options.onConnectionChange]);
 
-  const fullName = options.fullName || 'Usuario';
   const sessionId = options.sessionId || 'default';
-  const userId = options.userId;
+  const token = options.token;
   
   // URL del endpoint HTTP
-  const chatUrl = `http://localhost:8010/direct/chat/${sessionId}`;
+  const chatUrl = `${AIGO_API_BASE_URL}/direct/chat/${sessionId}`;
 
   // Función para enviar mensaje usando fetch con streaming
   const sendMessage = useCallback(async (message: string): Promise<void> => {
@@ -65,8 +63,7 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
 
     try {
       const requestBody: MessageInput = {
-        message: message.trim(),
-        full_name: fullName
+        message: message.trim()
       };
 
       console.log('Payload a enviar:', requestBody);
@@ -75,7 +72,7 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(userId ? { 'X-User-Id': userId } : {}) // Aquí se envía el user_id al backend AiGO
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}) // Agrega el token si existe
         },
         body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal
@@ -132,7 +129,7 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
       onErrorRef.current?.(error as Error);
       throw error;
     }
-  }, [chatUrl, fullName, userId]);
+  }, [chatUrl, token]);
 
   const disconnect = useCallback(() => {
     if (abortControllerRef.current) {
