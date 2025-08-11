@@ -5,7 +5,7 @@ const API_URLS = {
 
 const AIGO_API_URLS = {
   development: 'http://127.0.0.1:8010',
-  staging: 'https://your-staging-aigo-api.com', // Reemplazar cuando tengas staging
+  staging: 'https://agent-ai-quality.testgoai.com/',
 };
 
 const environment = import.meta.env.MODE || 'development';
