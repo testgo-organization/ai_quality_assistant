@@ -2,12 +2,7 @@ import { create } from 'zustand';
 import { useNotifications } from './useNotifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { API_BASE_URL } from '@/config';
-
-interface Task {
-  task_id: string;
-  filename: string;
-  status?: string;
-}
+import { Task } from '@/types/Task';
 
 interface TaskStore {
   tasks: Task[];

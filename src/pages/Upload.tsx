@@ -190,7 +190,11 @@ const Upload = () => {
           setShowProcessingModal(false);
           setUserClosedModal(true);
         }} 
-        tasks={tasks}
+        tasks={tasks.map((task: any) => ({
+          filename: task.filename ?? '',
+          task_id: task.task_id ?? '',
+          status: task.status
+        }))}
       />
       <div className="min-h-screen pt-20 pb-10 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-slate-900/50">
         <div className="max-w-4xl mx-auto space-y-8">
