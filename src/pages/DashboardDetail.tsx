@@ -19,7 +19,7 @@ export interface TranscriptionTurn {
   cliente: string;
 }
 
-interface Task {
+interface TaskResult {
   task_id: string;
   original_file_name: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -47,12 +47,12 @@ const DashboardDetail = () => {
   const navigate = useNavigate();
   const { getToken } = useAuth();
   const [showModal, setShowModal] = useState(false);
-  const [task, setTask] = useState<Task | null>(null);
+  const [task, setTask] = useState<TaskResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const taskRef = useRef<Task | null>(null);
-  const globalTasksRef = useRef<{task_id: string; filename: string; status?: string}[]>([]);
+  const taskRef = useRef<TaskResult | null>(null);
+  const globalTasksRef = useRef<typeof globalTasks>([]);
   
   // Acceder al store global de tareas
   const { tasks: globalTasks } = useTaskStore();
@@ -272,7 +272,7 @@ const DashboardDetail = () => {
           </div>
         </div>
 
-        {/* Task Info Card */}
+        {/* TaskResult Info Card */}
         <Card>
           <CardHeader>
             <CardTitle>Información del Archivo</CardTitle>

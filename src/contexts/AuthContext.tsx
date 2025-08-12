@@ -1,13 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '@/config';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  last_name?: string;
-  hasCompletedAiQualityOnboarding?: boolean;
-}
+import { User } from '@/types/User';
 
 interface AuthContextType {
   user: User | null;
@@ -73,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: data.user?.id || '1',
         email: data.user?.email || email,
         name: data.user?.name || 'Usuario',
-        hasCompletedAiQualityOnboarding: data.user?.hasCompletedAiQualityOnboarding || false
+        onboarding_ai_process: data.user?.onboarding_ai_process || false
       };
       
       const authToken = data.access_token || data.token;
@@ -88,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthModalOpen(false);
 
       // Mostrar chat de AiGO solo justo después de login exitoso
-      if (!user.hasCompletedAiQualityOnboarding) {
+      if (!user.onboarding_ai_process) {
         setShowAiGoChat(true);
       } else {
         setShowAiGoChat(false);
@@ -122,19 +115,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      // Aquí iría la lógica de registro real con tu backend
-      const mockUser = {
-        id: '1',
-        email,
-        name,
-        last_name,
-        hasCompletedAiQualityOnboarding: false
+      // Registro real con el backend
+      const response = await fetch(`${API_BASE_URL}user/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, name, last_name }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al registrarse');
+      }
+
+      const data = await response.json();
+
+      // Ajusta los campos según la respuesta real de tu backend
+      const user = {
+        id: data.user?.id || '1',
+        email: data.user?.email || email,
+        name: data.user?.name || name,
+        last_name: data.user?.last_name || last_name,
+        onboarding_ai_process: data.user?.onboarding_ai_process || false
       };
-      const mockToken = 'mock-jwt-token';
-      setUser(mockUser);
-      setToken(mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      localStorage.setItem('auth_token', mockToken);
+      const authToken = data.access_token || data.token;
+      if (!authToken) {
+        throw new Error('Token de acceso no recibido');
+      }
+
+      setUser(user);
+      setToken(authToken);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('auth_token', authToken);
       setIsAuthModalOpen(false);
       // Mostrar chat de AiGO solo justo después de registro exitoso
       setShowAiGoChat(true);
@@ -150,14 +163,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const openAuthModal = useCallback(() => setIsAuthModalOpen(true), []);
   const closeAuthModal = useCallback(() => setIsAuthModalOpen(false), []);
 
-  const completeAiQualityOnboarding = useCallback(() => {
+  const completeAiQualityOnboarding = useCallback(async () => {
     if (user) {
-      const updatedUser = { ...user, hasCompletedAiQualityOnboarding: true };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setShowAiGoChat(false);
+      try {
+        setLoading(true);
+        setError(null);
+        const tokenValue = getToken();
+        const response = await fetch(`${API_BASE_URL}user/update_onboarding_aigo`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenValue}`,
+          },
+          body: JSON.stringify({ onboarding_ai_process: true }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Error al actualizar el usuario');
+        }
+
+        // Actualiza el usuario localmente
+        const updatedUser = { ...user, onboarding_ai_process: true };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setShowAiGoChat(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al actualizar el usuario');
+        throw err;
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [user]);
+  }, [user, getToken]);
 
   return (
     <AuthContext.Provider value={{ 

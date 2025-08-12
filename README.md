@@ -1,73 +1,146 @@
-# Welcome to your Lovable project
+# TestGoAi - Plataforma Inteligente de Análisis de Contacto Cliente
 
-## Project info
+## Descripción General
 
-**URL**: https://lovable.dev/projects/7acd8369-4f95-4899-9dc2-885ed4789b02
+TestGoAi es una plataforma SaaS que permite analizar, comprender y mejorar las interacciones con clientes mediante inteligencia artificial avanzada. Soporta análisis de archivos de texto y audio, extracción de motivos de contacto, análisis de sentimientos, predicción de satisfacción (CSAT/NPS), cumplimiento de protocolos y mucho más.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Tecnologías Utilizadas
 
-**Use Lovable**
+- **Vite** (bundler)
+- **TypeScript**
+- **React**
+- **shadcn-ui** (UI components)
+- **Tailwind CSS**
+- **Lucide-react** (iconos)
+- **Context API** (manejo de autenticación y estado global)
+- **Custom Hooks** (manejo de tareas, notificaciones, chat, etc.)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7acd8369-4f95-4899-9dc2-885ed4789b02) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Estructura Principal del Proyecto
 
-**Use your preferred IDE**
+- `/src/pages` - Páginas principales (Dashboard, Upload, Index, etc.)
+- `/src/components` - Componentes reutilizables (Cards, Modals, Chat, etc.)
+- `/src/contexts` - Contextos globales (AuthContext)
+- `/src/hooks` - Hooks personalizados (useTaskStatus, useNotifications, useChatApi, etc.)
+- `/src/types` - Tipos TypeScript globales
+- `/src/config.ts` - Configuración de endpoints y variables globales
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Funcionalidades Clave
 
-Follow these steps:
+### 1. **Autenticación y Registro**
+- Registro y login contra backend real.
+- Manejo de sesión con token JWT (almacenado en localStorage).
+- Modal de autenticación reutilizable.
+- Estado global de usuario y token.
+
+### 2. **Carga y Procesamiento de Archivos**
+- Soporte para archivos `.txt`, `.csv` y audio.
+- Drag & drop y selección manual.
+- Validación de tipos de archivo.
+- Envío de archivos al backend para procesamiento.
+- Modal de progreso y polling de estado de tareas.
+
+### 3. **Dashboard de Análisis**
+- Visualización de resultados de análisis por archivo.
+- KPIs: sentimiento, humor, razón de contacto, FCR, categorías, transcripción.
+- Polling automático para actualizar el estado de las tareas.
+- Manejo de errores y estados de carga.
+
+### 4. **Notificaciones Globales**
+- Notificaciones automáticas para cambios de estado de tareas (éxito, error, procesamiento).
+- Sistema de notificaciones desacoplado mediante hooks y contexto.
+
+### 5. **Onboarding Interactivo con AiGO**
+- Chat interactivo de onboarding para nuevos usuarios.
+- Activación automática tras login/registro si el usuario no ha completado el onboarding.
+- Comunicación HTTP streaming con backend AiGO.
+- Mensajes animados, quick actions, y cierre de onboarding con actualización de usuario.
+- El estado de onboarding se actualiza en el backend al finalizar el flujo.
+- El chat utiliza HTTP streaming para respuestas en tiempo real.
+- El componente principal es `AiGoChat.tsx` y el hook `useChatApi.ts`.
+
+### 6. **Planes y Precios**
+- Sección de precios con planes diferenciados.
+- Acciones protegidas según autenticación.
+
+---
+
+## Seguridad
+
+- El token de autenticación se almacena en `localStorage` (conveniente pero no 100% seguro ante XSS).
+- Se recomienda usar cookies HttpOnly para máxima seguridad en producción.
+- Todas las llamadas al backend usan el token en el header `Authorization`.
+
+---
+
+## Cómo Ejecutar el Proyecto Localmente
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# 1. Clona el repositorio
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 2. Instala las dependencias
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 3. Inicia el servidor de desarrollo
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Despliegue
 
-**Use GitHub Codespaces**
+Puedes desplegar el proyecto directamente desde [Lovable](https://lovable.dev/projects/7acd8369-4f95-4899-9dc2-885ed4789b02) usando la opción Share -> Publish.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Personalización y Extensión
 
-This project is built with:
+- **Variables de entorno:** Edita `/src/config.ts` para cambiar endpoints y configuraciones globales.
+- **Componentes UI:** Personaliza los componentes en `/src/components` para adaptar el look & feel.
+- **Hooks:** Extiende la lógica de negocio en `/src/hooks`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## Integración del Chat AiGO
 
-Simply open [Lovable](https://lovable.dev/projects/7acd8369-4f95-4899-9dc2-885ed4789b02) and click on Share -> Publish.
+- El chat de onboarding AiGO se activa automáticamente tras login/registro si el usuario no ha completado el onboarding.
+- El estado de onboarding se actualiza en el backend al finalizar el flujo.
+- El chat utiliza HTTP streaming para respuestas en tiempo real.
+- El componente principal es `AiGoChat.tsx` y el hook `useChatApi.ts`.
+- El contexto de autenticación (`AuthContext.tsx`) expone el estado y las funciones para mostrar/ocultar el chat y completar el onboarding.
+- El chat soporta quick actions, mensajes animados, y feedback visual de conexión.
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## Contacto y Soporte
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- Email: contacto@tetgoai.com
+- Teléfono: +1 (800) 123-4567
+- Ciudad de México, México
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---
+
+## Licencia
+
+Este proyecto es privado y propiedad de TestGoAi.
+
+---
+
+## Recursos Útiles
+
+- [Documentación Lovable](https://docs.lovable.dev/)
+- [shadcn-ui](https://ui.shadcn.com/)
+- [Tailwind CSS](https://tailwindcss.com/)
+
+---
+
+## Más sobre AiGO
+
+Para detalles técnicos y de integración del chat AiGO, consulta el archivo [`AIGO_CHAT_README.md`](./AIGO_CHAT_README.md).

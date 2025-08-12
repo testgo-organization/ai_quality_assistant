@@ -1,12 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useTaskStatus } from '@/hooks/use-task-status';
-
-interface Task {
-  task_id: string;
-  filename: string;
-  status?: string;
-}
+import { Task } from '@/types/Task';
 
 /**
  * Componente que escucha cambios en el estado de las tareas
