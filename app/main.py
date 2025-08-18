@@ -11,6 +11,7 @@ import uvicorn
 from .config import settings
 # Importar routers
 from .api import health, direct_chat
+from .routes import history  # <-- Agrega esta línea
 
 # Configurar logging
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
@@ -38,6 +39,7 @@ app.add_middleware(
 # Incluir routers
 app.include_router(health.router)
 app.include_router(direct_chat.router)
+app.include_router(history.router)  # <-- Agrega esta línea
 
 logger.info("AiGO Streaming API v2.0 iniciada correctamente")
 

@@ -119,3 +119,48 @@ def put_model_context(user_id: str, session_id: str, model_context: dict):
             model_context=model_context
         )
         conv.save()
+
+def get_conversation_history(user_id: str, session_id: str):
+    """
+    Obtiene el historial de mensajes de una conversación.
+    """
+    pk = f"USER#{user_id}"
+    sk = f"CONVERSATION#{session_id}"
+    try:
+        conv = UserConversationModel.get(pk, sk)
+        return {
+            "messages": conv.messages or [],
+            "model_context": conv.model_context.as_dict() if conv.model_context else None,
+            "full_name": conv.full_name,
+            "session_id": conv.session_id,
+            "user_id": conv.user_id,
+        }
+    except DoesNotExist:
+        return None
+
+def put_conversation_history(user_id: str, session_id: str, data: dict):
+    """
+    Actualiza o crea el historial completo de una conversación.
+    """
+    pk = f"USER#{user_id}"
+    sk = f"CONVERSATION#{session_id}"
+    try:
+        conv = UserConversationModel.get(pk, sk)
+        if "messages" in data:
+            conv.messages = data["messages"]
+        if "model_context" in data:
+            conv.model_context = data["model_context"]
+        if "full_name" in data:
+            conv.full_name = data["full_name"]
+        conv.save()
+    except DoesNotExist:
+        conv = UserConversationModel(
+            pk=pk,
+            sk=sk,
+            user_id=user_id,
+            session_id=session_id,
+            full_name=data.get("full_name"),
+            messages=data.get("messages", []),
+            model_context=data.get("model_context"),
+        )
+        conv.save()
