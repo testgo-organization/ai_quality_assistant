@@ -348,20 +348,6 @@ files = [
 ]
 
 [[package]]
-name = "mangum"
-version = "0.19.0"
-description = "AWS Lambda support for ASGI applications"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "mangum-0.19.0-py3-none-any.whl", hash = "sha256:e500b35f495d5e68ac98bc97334896d6101523f2ee2c57ba6a61893b65266e59"},
-    {file = "mangum-0.19.0.tar.gz", hash = "sha256:e388e7c491b7b67970f8234e46fd4a7b21ff87785848f418de08148f71cf0bd6"},
-]
-
-[package.dependencies]
-typing-extensions = "*"
-
-[[package]]
 name = "openai"
 version = "1.97.1"
 description = "The official Python library for the openai API"
@@ -841,4 +827,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "57f3f4cb270f92768a44007e5d015b50e3f58705557cc6c02a52c1860c97d91f"
+content-hash = "b7933d19e8957e2492fee0d559e353e7197c6510dd0822d42024276daaa3f67c"
