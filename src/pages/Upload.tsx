@@ -122,25 +122,27 @@ const Upload = () => {
 
       // Manejar específicamente errores de autenticación
       if (response.status === 401) {
-        // Token inválido o expirado
         setProcessing(false);
         setShowProcessingModal(false);
-        stopPolling(); // Detener polling de notificaciones
-        
+        stopPolling();
         showError(
           "Sesión expirada",
           "Tu sesión ha expirado. Por favor, inicia sesión nuevamente."
         );
-        
-        // Cerrar sesión y abrir modal de autenticación
         await logout();
         openAuthModal();
         return;
       }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Error al enviar los archivos para procesamiento.');
+        let errorMessage = 'Error al enviar los archivos para procesamiento.';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          // Si no es JSON, usa el mensaje por defecto
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -149,11 +151,8 @@ const Upload = () => {
       }
 
       addTasks(data.tasks);
-      
+
       setProcessing(false);
-      // NO cerrar el modal aquí - debe mantenerse abierto para mostrar el progreso
-      // setShowProcessingModal(false); // Removido - el usuario lo cerrará manualmente
-      
       showSuccess(
         "Archivos enviados",
         "Los archivos se han enviado correctamente para procesamiento."
@@ -161,9 +160,9 @@ const Upload = () => {
     } catch (error) {
       setProcessing(false);
       setShowProcessingModal(false);
-      
+
       const errorMessage = error instanceof Error ? error.message : "No se pudieron procesar los archivos. Inténtalo de nuevo.";
-      
+
       showError(
         "Error en el procesamiento",
         errorMessage

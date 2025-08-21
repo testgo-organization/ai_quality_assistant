@@ -1,13 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { AIGO_API_BASE_URL } from '@/config'; // Importa la URL base de AiGO
 
-interface ChatMessage {
-  id: string;
-  content: string;
-  isUser: boolean;
-  timestamp: Date;
-}
-
 interface MessageInput {
   message: string;
 }
@@ -41,7 +34,7 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
   const token = options.token;
   
   // URL del endpoint HTTP
-  const chatUrl = `${AIGO_API_BASE_URL}/direct/chat/${sessionId}`;
+  const chatUrl = `${AIGO_API_BASE_URL}direct/chat/${sessionId}`;
 
   // Función para enviar mensaje usando fetch con streaming
   const sendMessage = useCallback(async (message: string): Promise<void> => {
@@ -49,8 +42,6 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
       console.warn('Intento de enviar mensaje vacío');
       return;
     }
-
-    console.log('Enviando mensaje:', message);
     setIsLoading(true);
 
     // Cancelar request anterior si existe
@@ -65,9 +56,6 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
       const requestBody: MessageInput = {
         message: message.trim()
       };
-
-      console.log('Payload a enviar:', requestBody);
-
       const response = await fetch(chatUrl, {
         method: 'POST',
         headers: {
@@ -79,7 +67,21 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
       });
 
       if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
+        // Intenta extraer el mensaje de error del cuerpo de la respuesta
+        let errorDetail = `Error HTTP: ${response.status} - ${response.statusText}`;
+        try {
+          const errorJson = await response.json();
+          if (errorJson && errorJson.detail) {
+            errorDetail = errorJson.detail;
+          }
+        } catch (jsonError) {
+          // Si no se puede parsear el JSON, usa el mensaje por defecto
+          errorDetail = 'Lo siento, hubo un error al procesar tu mensaje. Por favor, inténtalo de nuevo.';
+        }
+        const errorObj = new Error(errorDetail);
+        onErrorRef.current?.(errorObj);
+        setIsLoading(false);
+        return;
       }
 
       if (!response.body) {
@@ -110,7 +112,7 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
         setIsLoading(false);
 
       } catch (streamError) {
-        console.error('Error leyendo stream:', streamError);
+        console.log('Error al procesar el stream:', streamError);
         setIsLoading(false);
         throw streamError;
       } finally {
@@ -118,16 +120,14 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
       }
 
     } catch (error) {
-      console.error('Error enviando mensaje:', error);
       setIsLoading(false);
-      
       if (error instanceof Error && error.name === 'AbortError') {
         console.log('Request cancelado');
         return;
       }
-      
+      // Solo manejar el error si no fue ya manejado arriba
       onErrorRef.current?.(error as Error);
-      throw error;
+      // No lanzar el error, solo manejarlo aquí
     }
   }, [chatUrl, token]);
 
@@ -141,7 +141,6 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
 
   // Simular conexión inmediata para HTTP
   useEffect(() => {
-    console.log('Chat HTTP API inicializado');
     setIsConnected(true);
     onConnectionChangeRef.current?.(true);
 

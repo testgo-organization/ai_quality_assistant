@@ -154,7 +154,7 @@ function AiGoChatWrapper() {
 
 ### 3. Activación Automática
 El chat se activa automáticamente cuando:
-- Usuario completa login exitoso Y `onboarding_ai_process === false`
+- Usuario completa login exitoso Y `onboarding_process === false`
 - Usuario completa registro exitoso (siempre se activa)
 
 ## Personalización
@@ -208,7 +208,7 @@ npm run dev
 ## Troubleshooting
 
 ### El chat no aparece
-- Verificar que `onboarding_ai_process` sea `false`
+- Verificar que `onboarding_process` sea `false`
 - Revisar el estado de autenticación en DevTools
 
 ### WebSocket no conecta

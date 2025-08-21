@@ -3,5 +3,5 @@ export interface User {
   email: string;
   name: string;
   last_name?: string;
-  onboarding_ai_process?: boolean;
+  onboarding_process?: boolean;
 }
