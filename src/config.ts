@@ -5,7 +5,7 @@ const API_URLS = {
 };
 
 const AIGO_API_URLS = {
-  development: 'http://127.0.0.1:8010',
+  development: 'http://127.0.0.1:8010/',
   staging: 'https://agent-ai-quality.testgoai.com/',
   production: 'https://agent-ai-quality.testgoai.com/',
 };

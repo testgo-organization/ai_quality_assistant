@@ -37,15 +37,15 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
     
     setMessages(prev => {
       // Si es el primer chunk de una nueva respuesta, crear un nuevo mensaje
-      if (!currentResponseIdRef.current) {
-        currentResponseIdRef.current = Date.now().toString();
-        const newBotMessage: Message = {
-          id: currentResponseIdRef.current,
-          content: messageChunk,
-          isUser: false,
-          timestamp: new Date()
-        };
-        return [...prev, newBotMessage];
+        if (!currentResponseIdRef.current) {
+          currentResponseIdRef.current = uuidv4();
+          const newBotMessage: Message = {
+            id: currentResponseIdRef.current,
+            content: messageChunk,
+            isUser: false,
+            timestamp: new Date()
+          };
+          return [...prev, newBotMessage];
       } else {
         // Si es un chunk adicional, agregar al último mensaje del bot
         return prev.map(msg => 
@@ -58,10 +58,9 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
   }, []);
 
   const handleError = useCallback((error: Error) => {
-    console.error('Error en chat AiGO:', error);
     const errorMessage: Message = {
-      id: Date.now().toString(),
-      content: 'Lo siento, hubo un problema de conexión.',
+      id: uuidv4(),
+      content: error.message,
       isUser: false,
       timestamp: new Date()
     };
@@ -81,25 +80,45 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
           // Resetear el ID de respuesta para el mensaje inicial
           currentResponseIdRef.current = null;
           // Enviar un mensaje simple de saludo para activar la bienvenida del servidor
-          sendChatMessageRef.current('Hola').catch((error) => {
-            console.error('Error enviando mensaje inicial:', error);
-          });
+          sendChatMessageRef.current('Hola')
         }
       }, 500);
     }
   }, []);
 
-  const { sendMessage: sendChatMessage, isLoading: isChatLoading, isConnected } = useChatApi({
-    sessionId: sessionUuidRef.current,
-    token: getToken(), // Llama a la función para obtener el token actual
-    onMessage: handleMessage,
-    onError: handleError,
-    onConnectionChange: handleConnectionChange
-  });
+  // Mueve la inicialización del chat (useChatApi) para que solo se active si el usuario está autenticado y el chat está abierto
+  const shouldInitChat = !!user && open;
+
+  const { sendMessage: sendChatMessage, isLoading: isChatLoading, isConnected } = useChatApi(
+    shouldInitChat
+      ? {
+          sessionId: sessionUuidRef.current,
+          token: getToken(),
+          onMessage: handleMessage,
+          onError: handleError,
+          onConnectionChange: handleConnectionChange,
+        }
+      : undefined
+  );
 
   // Mantener referencia al sendMessage para evitar dependencias circulares
   const sendChatMessageRef = useRef(sendChatMessage);
   sendChatMessageRef.current = sendChatMessage;
+
+  // Enviar saludo inicial cuando el chat se abre y está conectado
+  useEffect(() => {
+    if (shouldInitChat && isConnected && open && sendChatMessageRef.current && !hasInitialized.current) {
+      hasInitialized.current = true;
+      setTimeout(() => {
+        currentResponseIdRef.current = null;
+        sendChatMessageRef.current('Hola').catch(() => {});
+      }, 500);
+    }
+    // Reiniciar hasInitialized si el chat se cierra
+    if (!open) {
+      hasInitialized.current = false;
+    }
+  }, [shouldInitChat, isConnected, open]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -113,7 +132,7 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
     if (!inputMessage.trim() || isChatLoading) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       content: inputMessage,
       isUser: true,
       timestamp: new Date()
@@ -126,18 +145,7 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
     // Resetear el ID de respuesta para la nueva respuesta
     currentResponseIdRef.current = null;
 
-    try {
-      // Con HTTP streaming, el mensaje se envía y la respuesta llegará por chunks
-      await sendChatMessage(messageToSend);
-    } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, inténtalo de nuevo.',
-        isUser: false,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    }
+    await sendChatMessage(messageToSend);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -177,13 +185,7 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
     try {
       await sendChatMessage(action);
     } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, inténtalo de nuevo.',
-        isUser: false,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      // El error será manejado por handleError (onError del hook)
     }
   };
 
@@ -239,19 +241,6 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
             <ScrollArea className="h-full w-full px-6 py-4 bg-gradient-to-b from-transparent to-blue-50/30">
               <div className="space-y-4">
                 {/* Mensaje de inicialización cuando no hay mensajes */}
-                {messages.length === 0 && isConnected && (
-                  <div className="flex gap-3 justify-start animate-in slide-in-from-bottom-2">
-                    <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center shadow-lg">
-                      <Bot className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="bg-white border border-gray-100 shadow-md rounded-2xl px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                        <span className="text-sm text-gray-500">AiGO se está inicializando...</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
                 
                 {messages.map((message, index) => (
                   <div
@@ -316,7 +305,7 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
           </div>
 
           {/* Quick Actions - Solo mostrar después del primer mensaje del servidor */}
-          {messages.length === 1 && !isChatLoading && !messages[0]?.isUser && (
+          {/* {messages.length === 1 && !isChatLoading && !messages[0]?.isUser && (
             <div className="px-6 py-2 border-t border-gray-100 bg-white/50 backdrop-blur-sm">
               <p className="text-sm text-gray-600 mb-2">Acciones rápidas:</p>
               <div className="flex flex-wrap gap-2">
@@ -333,7 +322,7 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
                 ))}
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Input Area mejorada */}
           <div className="border-t bg-white/80 backdrop-blur-sm px-6 py-4">

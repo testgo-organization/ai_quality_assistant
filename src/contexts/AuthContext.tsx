@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: data.user?.id || '1',
         email: data.user?.email || email,
         name: data.user?.name || 'Usuario',
-        onboarding_ai_process: data.user?.onboarding_ai_process || false
+        onboarding_process: data.user?.onboarding_process || false
       };
       
       const authToken = data.access_token || data.token;
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthModalOpen(false);
 
       // Mostrar chat de AiGO solo justo después de login exitoso
-      if (!user.onboarding_ai_process) {
+      if (!user.onboarding_process) {
         setShowAiGoChat(true);
       } else {
         setShowAiGoChat(false);
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: data.user?.email || email,
         name: data.user?.name || name,
         last_name: data.user?.last_name || last_name,
-        onboarding_ai_process: data.user?.onboarding_ai_process || false
+        onboarding_process: data.user?.onboarding_process || false
       };
       const authToken = data.access_token || data.token;
       if (!authToken) {
@@ -175,7 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${tokenValue}`,
           },
-          body: JSON.stringify({ onboarding_ai_process: true }),
+          body: JSON.stringify({ onboarding_process: true }),
         });
 
         if (!response.ok) {
@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Actualiza el usuario localmente
-        const updatedUser = { ...user, onboarding_ai_process: true };
+        const updatedUser = { ...user, onboarding_process: true };
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
         setShowAiGoChat(false);
