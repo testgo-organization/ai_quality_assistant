@@ -10,7 +10,7 @@ import logging
 from app.db.dynamodb import put_conversation_item, put_model_context
 from app.shared.dependencies import get_current_user
 
-from ..domain.direct_service import DirectAiGOService
+from ..domain.direct_service import DirectAiGOService, QuotaExceededException
 
 logger = logging.getLogger(__name__)
 
@@ -41,36 +41,67 @@ async def chat(session_id: str, input: MessageInput, user=Depends(get_current_us
             "role": "user"
         })
 
-        def stream_response():
-            # Acumula la respuesta completa del asistente
-            ai_response = ""
-            datos_recopilados = None
-            for chunk, datos in direct_service.stream_chat_response(
-                session_id, input.message, user["full_name"]
-            ):
+        # Consumir el generador antes de devolver la respuesta
+        gen = direct_service.stream_chat_response(
+            session_id, input.message, user["full_name"]
+        )
+        chunks = []
+        datos_recopilados = None
+        ai_response = ""
+        try:
+            for chunk, datos in gen:
                 ai_response += chunk
-                yield chunk
+                chunks.append(chunk)
                 if datos is not None:
                     datos_recopilados = datos
-            # Al finalizar el streaming, guarda la respuesta completa como role "ai"
-            if ai_response.strip():
-                put_conversation_item({
-                    "session_id": session_id,
-                    "user_id": user["user_id"],
-                    "full_name": user["full_name"],
-                    "message": ai_response,
-                    "role": "ai"
-                })
-            # Si hay datos recopilados, guarda el model_context
-            if datos_recopilados:
-                put_model_context(user["user_id"], session_id, datos_recopilados)
-                direct_service.clear_session(session_id)
+        except QuotaExceededException:
+            logger.error("Error de cuota insuficiente en chat directo (pre-stream)")
+            raise HTTPException(
+                status_code=429,
+                detail="El servicio está temporalmente no disponible por límite de uso. Por favor intenta nuevamente más tarde."
+            )
+        except Exception as e:
+            logger.error(f"Error en chat directo: {e}")
+            raise HTTPException(status_code=500, detail="Ocurrió un error inesperado. Por favor intenta nuevamente más tarde.")
 
-        return StreamingResponse(stream_response(), media_type="text/plain")
+        # Si el primer chunk es el mensaje de cuota, devolver 429
+        if chunks and chunks[0].strip() == "El servicio está temporalmente no disponible por límite de uso. Por favor intenta nuevamente más tarde.":
+            raise HTTPException(
+                status_code=429,
+                detail=chunks[0].strip()
+            )
 
+        # Guardar la respuesta completa y datos recopilados
+        if ai_response.strip():
+            put_conversation_item({
+                "session_id": session_id,
+                "user_id": user["user_id"],
+                "full_name": user["full_name"],
+                "message": ai_response,
+                "role": "ai"
+            })
+        if datos_recopilados:
+            put_model_context(user["user_id"], session_id, datos_recopilados)
+            direct_service.clear_session(session_id)
+
+        # Devuelve el streaming simulado
+        def merged_stream():
+            for chunk in chunks:
+                yield chunk
+
+        return StreamingResponse(merged_stream(), media_type="text/plain")
+
+    except QuotaExceededException:
+        logger.error("Error de cuota insuficiente en chat directo (catch global)")
+        raise HTTPException(
+            status_code=429,
+            detail="El servicio está temporalmente no disponible por límite de uso. Por favor intenta nuevamente más tarde."
+        )
     except Exception as e:
         logger.error(f"Error en chat directo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        if "429:" in str(e):
+            raise HTTPException(status_code=429, detail=str(e).replace("429:", "").strip())
+        raise HTTPException(status_code=500, detail="Ocurrió un error inesperado. Por favor intenta nuevamente más tarde.")
 
 
 @router.delete("/chat/{session_id}")
