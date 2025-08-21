@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Send, Bot, User, Sparkles, X, MessageCircle, Zap } from 'lucide-react';
 import { useChatApi } from '@/hooks/useChatApi';
 import { v4 as uuidv4 } from 'uuid';
+import { AIGO_API_BASE_URL } from '@/config';
+import { fetchChatHistory, saveChatHistory } from '@/utils/chatHistory';
 
 interface Message {
   id: string;
@@ -189,6 +191,43 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
     }
   };
 
+  // Recuperar historial al abrir el chat
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (user && open) {
+        try {
+          const token = getToken();
+          const history = await fetchChatHistory(token);
+          // Asegura que todos los timestamps sean Date (linter-friendly)
+          setMessages(
+            history.map((msg) => ({
+              ...msg,
+              timestamp: msg.timestamp instanceof Date
+                ? msg.timestamp
+                : new Date(msg.timestamp)
+            }))
+          );
+        } catch {
+          // Silenciar error de historial
+        }
+      }
+    };
+    loadHistory();
+  }, [user, open, getToken]);
+
+  // Guardar historial al continuar más tarde
+  const handleContinueLater = async () => {
+    if (user) {
+      try {
+        const token = getToken();
+        await saveChatHistory(token, messages);
+      } catch {
+        // Silenciar error de guardado
+      }
+    }
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -359,7 +398,7 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
+                  onClick={handleContinueLater}
                   className="text-sm border-gray-200"
                 >
                   Continuar más tarde

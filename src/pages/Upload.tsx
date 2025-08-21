@@ -14,6 +14,7 @@ import { API_BASE_URL } from "@/config";
 import ProcessingModal from "@/components/ProcessingModal";
 import { useTaskStatus } from '@/hooks/use-task-status';
 import { useNotificationPoller } from '@/hooks/use-notification-poller';
+import AiGoChat from "@/components/AiGoChat";
 
 interface AudioTask {
   filename: string;
@@ -23,7 +24,7 @@ interface AudioTask {
 
 const Upload = () => {
   const { showSuccess, showError, showWarning } = useNotifications();
-  const { isAuthenticated, getToken, openAuthModal, logout } = useAuth();
+  const { isAuthenticated, getToken, openAuthModal, logout, user, showAiGoChat, setShowAiGoChat } = useAuth();
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -76,9 +77,16 @@ const Upload = () => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Verifica si el onboarding está completo
+  const isOnboardingComplete = user?.onboarding_ai_process === true;
+
   const handleUploadAttempt = () => {
     if (!isAuthenticated) {
       openAuthModal();
+      return;
+    }
+    if (!isOnboardingComplete) {
+      setShowAiGoChat(true);
       return;
     }
     uploadFiles();
@@ -182,6 +190,7 @@ const Upload = () => {
   
   return (
     <>
+      <AiGoChat open={showAiGoChat} onOpenChange={setShowAiGoChat} />
       <ProcessingModal 
         open={showProcessingModal} 
         onClose={() => {
