@@ -45,9 +45,11 @@ const Index = () => {
             <span className="gradient-text">TestGoAi</span>
           </h1>
           
-          <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
-            Analiza, comprende y mejora las interacciones con tus clientes mediante 
-            inteligencia artificial avanzada.
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8 font-bold">
+          Análisis inteligente de interacciones
+          </p>
+          <p className="text-base sm:text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-6 font-medium">
+          Descubre insights valiosos sobre las conversaciones con tus clientes mediante análisis avanzado de texto y voz.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
