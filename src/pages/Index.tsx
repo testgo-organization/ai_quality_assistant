@@ -2,8 +2,9 @@ import React from "react";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { Button } from "@/components/ui/button";
 import { 
-  Upload, 
-  BarChart3, 
+  Play, 
+  BarChart3,
+  Settings,
   PieChart, 
   MessageSquare, 
   Users,
@@ -12,11 +13,13 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PricingSection from "@/components/PricingSection";
+import DialogQuickStart from "@/dialogs/DialogQuickStart";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const { isAuthenticated, openAuthModal } = useAuth();
   const navigate = useNavigate();
+  const [openQuickStart, setOpenQuickStart] = React.useState(false);
 
   const handleProtectedNav = (path: string) => {
     if (isAuthenticated) {
@@ -48,14 +51,16 @@ const Index = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button onClick={() => handleProtectedNav('/upload')} size="lg" className="bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple hover:opacity-90 transition-opacity flex items-center gap-2">
-              <Upload size={18} />
-              <span>Subir Archivos</span>
+            <Button onClick={() => setOpenQuickStart(true)} size="lg" className="bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple hover:opacity-90 transition-opacity flex items-center gap-2">
+              <Play size={18} />
+              <span>Inicio rápido</span>
             </Button>
+            <DialogQuickStart open={openQuickStart} onClose={() => setOpenQuickStart(false)} />
             
-            <Button onClick={() => navigate('/dashboard')} size="lg" variant="outline" className="border-2 border-tetgoai-blue hover:bg-tetgoai-blue/5 flex items-center gap-2">
-              <BarChart3 size={18} />
-              <span>Ver Dashboard</span>
+            {/* <Button onClick={() => navigate('/dashboard')} size="lg" variant="outline" className="border-2 border-tetgoai-blue hover:bg-tetgoai-blue/5 flex items-center gap-2"> */}
+            <Button size="lg" variant="outline" className="border-2 border-tetgoai-blue hover:bg-tetgoai-blue hover:text-white hover:border-tetgoai-purple flex items-center gap-2">
+              <Settings  size={18} />
+              <span>Configurar servicio</span>
             </Button>
           </div>
         </div>
@@ -111,7 +116,7 @@ const Index = () => {
               <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
                 Carga tus archivos de texto o audio y obtén insights valiosos sobre las conversaciones con tus clientes.
               </p>
-              <Button onClick={() => handleProtectedNav('/upload')} size="lg" className="bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple hover:opacity-90 transition-opacity flex items-center gap-2">
+              <Button onClick={() => setOpenQuickStart(true)} size="lg" className="bg-gradient-to-r from-tetgoai-blue to-tetgoai-purple hover:opacity-90 transition-opacity flex items-center gap-2">
                 <span>Comenzar ahora</span>
                 <ChevronRight size={16} />
               </Button>
