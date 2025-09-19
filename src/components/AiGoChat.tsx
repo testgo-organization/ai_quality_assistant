@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Send, Bot, User, Sparkles, X, MessageCircle, Zap } from 'lucide-react';
 import { useChatApi } from '@/hooks/useChatApi';
 import { v4 as uuidv4 } from 'uuid';
+import { AIGO_API_BASE_URL } from '@/config';
 import { fetchChatHistory, saveChatHistory } from '@/utils/chatHistory';
 
 interface Message {
@@ -34,6 +35,7 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
   const currentResponseIdRef = useRef<string | null>(null);
 
   const handleMessage = useCallback((messageChunk: string) => {
+    console.log('Chunk recibido:', messageChunk);
     
     setMessages(prev => {
       // Si es el primer chunk de una nueva respuesta, crear un nuevo mensaje
@@ -218,13 +220,12 @@ const AiGoChat: React.FC<AiGoChatProps> = ({ open, onOpenChange }) => {
     if (user) {
       try {
         const token = getToken();
-        // TODO: Agregar aqui el update a la BD Relacional
-        await saveChatHistory(token, sessionUuidRef.current, false);
-        onOpenChange(false);
+        await saveChatHistory(token, messages);
       } catch {
-        console.log("Error al guardar el historial");
+        // Silenciar error de guardado
       }
     }
+    onOpenChange(false);
   };
 
   return (

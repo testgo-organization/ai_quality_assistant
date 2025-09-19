@@ -1,4 +1,4 @@
-import { AIGO_API_BASE_URL, API_BASE_URL } from '@/config';
+import { AIGO_API_BASE_URL } from '@/config';
 
 export interface ChatMessage {
   id: string;
@@ -9,7 +9,7 @@ export interface ChatMessage {
 
 export async function fetchChatHistory(token: string): Promise<ChatMessage[]> {
   try {
-    const res = await fetch(`${AIGO_API_BASE_URL}aigo/chat/history`, {
+    const res = await fetch(`${AIGO_API_BASE_URL}/aigo/chat/history`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -31,26 +31,18 @@ export async function fetchChatHistory(token: string): Promise<ChatMessage[]> {
   return [];
 }
 
-export async function saveChatHistory(token: string, session_id: string, onboarding_process: boolean): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}user/update_onboarding_aigo`, {
+export async function saveChatHistory(token: string, messages: ChatMessage[]): Promise<void> {
+  await fetch(`${AIGO_API_BASE_URL}/aigo/chat/history`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      last_session_chat: session_id,
-      onboarding_process
+      messages: messages.map(m => ({
+        ...m,
+        timestamp: typeof m.timestamp === 'string' ? m.timestamp : m.timestamp.toISOString()
+      }))
     })
   });
-  if (!res.ok) {
-    let errorMsg = `Error: ${res.status} - ${res.statusText}`;
-    try {
-      const data = await res.json();
-      if (data && data.detail) errorMsg = data.detail;
-    } catch {}
-    throw new Error(errorMsg);
-  }
-  // Opcional: puedes retornar el resultado si lo necesitas
-  // return await res.json();
 }

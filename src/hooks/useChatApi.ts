@@ -107,6 +107,8 @@ export const useChatApi = (options: UseChatApiOptions = {}) => {
           // Enviar cada chunk al callback
           onMessageRef.current?.(chunk);
         }
+
+        console.log('Mensaje completo recibido:', accumulatedMessage);
         setIsLoading(false);
 
       } catch (streamError) {
