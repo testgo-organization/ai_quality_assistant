@@ -61,6 +61,8 @@ poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `WebSocket /ws/chat/{session_id}` - Endpoint principal para chat streaming (acepta parámetro opcional `full_name`)
 - `GET /sessions` - Listar sesiones activas
 - `DELETE /sessions/{session_id}` - Cerrar sesión específica
+- `GET /aigo/chat/history/{session_id}` - Obtener historial de conversación
+- `PUT /aigo/chat/history/{session_id}` - Actualizar historial de conversación
 
 ### WebSocket Protocol
 

@@ -1,22 +1,16 @@
 """
-Endpoint directo de chat AiGO - Implementación simple basada en open_ai_main.py
+Controlador para el endpoint directo de chat AiGO
 """
 
-from fastapi import APIRouter, HTTPException, Header, Depends
-from fastapi.responses import StreamingResponse
+from fastapi import HTTPException, Depends
+from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
-from typing import Optional
 import logging
 from app.db.dynamodb import put_conversation_item, put_model_context
 from app.shared.dependencies import get_current_user
-
-from ..domain.direct_service import DirectAiGOService
+from app.domain.direct_service import DirectAiGOService, QuotaExceededException
 
 logger = logging.getLogger(__name__)
-
-router = APIRouter(prefix="/direct", tags=["direct-chat"])
-
-# Instancia del servicio
 direct_service = DirectAiGOService()
 
 class MessageInput(BaseModel):
@@ -25,34 +19,45 @@ class MessageInput(BaseModel):
     message: str
 
 
-@router.post("/chat/{session_id}")
 async def chat(session_id: str, input: MessageInput, user=Depends(get_current_user)):
     """
     Endpoint de chat directo con streaming y mantenimiento de sesión
     Implementación basada en open_ai_main.py
     """
+    # Guardar mensaje del usuario
+    put_conversation_item({
+        "session_id": session_id,
+        "user_id": user["user_id"],
+        "full_name": user["full_name"],
+        "message": input.message,
+        "role": "user"
+    })
     try:
-        # Guardar mensaje del usuario
-        put_conversation_item({
-            "session_id": session_id,
-            "user_id": user["user_id"],
-            "full_name": user["full_name"],
-            "message": input.message,
-            "role": "user"
-        })
 
-        def stream_response():
-            # Acumula la respuesta completa del asistente
-            ai_response = ""
+        def merged_stream():
             datos_recopilados = None
-            for chunk, datos in direct_service.stream_chat_response(
-                session_id, input.message, user["full_name"]
-            ):
-                ai_response += chunk
-                yield chunk
-                if datos is not None:
-                    datos_recopilados = datos
-            # Al finalizar el streaming, guarda la respuesta completa como role "ai"
+            ai_response = ""
+            try:
+                gen = direct_service.stream_chat_response(
+                    session_id, input.message, user["full_name"]
+                )
+                for chunk, datos in gen:
+                    # Si el primer chunk es mensaje de cuota, corta el stream
+                    if not ai_response and chunk.strip() == "El servicio está temporalmente no disponible por límite de uso. Por favor intenta nuevamente más tarde.":
+                        yield chunk
+                        return
+                    ai_response += chunk
+                    if datos is not None:
+                        datos_recopilados = datos
+                    yield chunk
+            except QuotaExceededException:
+                yield "El servicio está temporalmente no disponible por límite de uso. Por favor intenta nuevamente más tarde."
+                return
+            except Exception:
+                yield "Ocurrió un error inesperado. Por favor intenta nuevamente más tarde."
+                return
+
+            # Guardar la respuesta completa y datos recopilados
             if ai_response.strip():
                 put_conversation_item({
                     "session_id": session_id,
@@ -61,19 +66,25 @@ async def chat(session_id: str, input: MessageInput, user=Depends(get_current_us
                     "message": ai_response,
                     "role": "ai"
                 })
-            # Si hay datos recopilados, guarda el model_context
             if datos_recopilados:
                 put_model_context(user["user_id"], session_id, datos_recopilados)
                 direct_service.clear_session(session_id)
 
-        return StreamingResponse(stream_response(), media_type="text/plain")
+        return StreamingResponse(merged_stream(), media_type="text/plain")
 
+    except QuotaExceededException:
+        logger.error("Error de cuota insuficiente en chat directo (catch global)")
+        raise HTTPException(
+            status_code=429,
+            detail="El servicio está temporalmente no disponible por límite de uso. Por favor intenta nuevamente más tarde."
+        )
     except Exception as e:
         logger.error(f"Error en chat directo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        if "429:" in str(e):
+            raise HTTPException(status_code=429, detail=str(e).replace("429:", "").strip())
+        raise HTTPException(status_code=500, detail="Ocurrió un error inesperado. Por favor intenta nuevamente más tarde.")
 
 
-@router.delete("/chat/{session_id}")
 async def clear_session(session_id: str):
     """Limpiar una sesión específica"""
     try:
@@ -86,7 +97,6 @@ async def clear_session(session_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/sessions")
 async def get_sessions():
     """Obtener todas las sesiones activas"""
     try:
@@ -96,7 +106,6 @@ async def get_sessions():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/test")
 async def test_client():
     """Cliente de prueba para el chat directo"""
     html_content = """
@@ -331,7 +340,5 @@ async def test_client():
     </body>
     </html>
     """
-
-    from fastapi.responses import HTMLResponse
 
     return HTMLResponse(content=html_content)

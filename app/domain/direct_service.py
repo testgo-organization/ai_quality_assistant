@@ -5,6 +5,7 @@ Servicio AiGO directo - Implementación basada en OpenAI Chat Completions
 import logging
 from typing import Iterator, Optional, Dict, Any, List
 from openai import OpenAI
+from openai import RateLimitError
 from ..config import settings
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,10 @@ class ConversationSession:
         """Obtener todos los mensajes"""
         return self.messages.copy()
 
+
+class QuotaExceededException(Exception):
+    """Excepción para cuota insuficiente de OpenAI"""
+    pass
 
 class DirectAiGOService:
     """Servicio directo de AiGO usando OpenAI Chat Completions"""
@@ -284,6 +289,28 @@ class DirectAiGOService:
             if response_content:
                 session.add_message("assistant", response_content)
 
+        except RateLimitError as e:
+            logger.error(f"OpenAI RateLimitError: {e}")
+            yield (
+                "El servicio está temporalmente no disponible por límite de uso. Por favor intenta nuevamente más tarde.",
+                None,
+            )
+            raise QuotaExceededException("quota_exceeded")
         except Exception as e:
             logger.error(f"Error en streaming de respuesta: {e}")
-            yield f"Error: {str(e)}", None
+            error_message = str(e)
+            if (
+                ("429" in error_message and "quota" in error_message)
+                or ("insufficient_quota" in error_message)
+                or ("You exceeded your current quota" in error_message)
+            ):
+                yield (
+                    "El servicio está temporalmente no disponible por límite de uso. Por favor intenta nuevamente más tarde.",
+                    None,
+                )
+                raise QuotaExceededException("quota_exceeded")
+            yield (
+                "Ocurrió un error inesperado. Por favor intenta nuevamente más tarde.",
+                None,
+            )
+            raise e

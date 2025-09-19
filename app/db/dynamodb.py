@@ -42,19 +42,14 @@ class UserConversationModel(Model):
         aws_access_key_id = settings.DYNAMODB_ACCESS_KEY
         aws_secret_access_key = settings.DYNAMODB_SECRET_KEY
 
-    
     full_name = UnicodeAttribute(null=True)
-    
     pk = UnicodeAttribute(hash_key=True)
     sk = UnicodeAttribute(range_key=True)
-    
-    # Atributos específicos de la conversación (opcionales, ya que se anidan en el JSON)
     messages = ListAttribute(of=Message, null=True)
     model_context = ModelContext(null=True)
-    
-    # Atributos adicionales que necesites
     user_id = UnicodeAttribute(null=True)
     session_id = UnicodeAttribute(null=True)
+    created_at = UnicodeAttribute(null=True)
 
 def put_conversation_item(item: dict):
     """
@@ -93,7 +88,8 @@ def put_conversation_item(item: dict):
             user_id=item["user_id"],
             session_id=item["session_id"],
             full_name=item.get("full_name"),
-            messages=[message_obj]
+            messages=[message_obj],
+            created_at=datetime.utcnow().isoformat()  # <-- Guardar fecha de inicio
         )
         if item.get("function_data"):
             conv.model_context = item["function_data"]
@@ -117,5 +113,54 @@ def put_model_context(user_id: str, session_id: str, model_context: dict):
             user_id=user_id,
             session_id=session_id,
             model_context=model_context
+        )
+        conv.save()
+
+def get_conversation_history(user_id: str, session_id: str):
+    """
+    Obtiene el historial de mensajes de una conversación.
+    """
+    pk = f"USER#{user_id}"
+    sk = f"CONVERSATION#{session_id}"
+    try:
+        conv = UserConversationModel.get(pk, sk)
+        return {
+            "messages": conv.messages or [],
+            "model_context": conv.model_context.as_dict() if conv.model_context else None,
+            "full_name": conv.full_name,
+            "session_id": conv.session_id,
+            "user_id": conv.user_id,
+            "created_at": conv.created_at,
+        }
+    except DoesNotExist:
+        return None
+
+def put_conversation_history(user_id: str, session_id: str, data: dict):
+    """
+    Actualiza o crea el historial completo de una conversación.
+    """
+    pk = f"USER#{user_id}"
+    sk = f"CONVERSATION#{session_id}"
+    try:
+        conv = UserConversationModel.get(pk, sk)
+        if "messages" in data:
+            conv.messages = data["messages"]
+        if "model_context" in data:
+            conv.model_context = data["model_context"]
+        if "full_name" in data:
+            conv.full_name = data["full_name"]
+        if "created_at" in data:
+            conv.created_at = data["created_at"]
+        conv.save()
+    except DoesNotExist:
+        conv = UserConversationModel(
+            pk=pk,
+            sk=sk,
+            user_id=user_id,
+            session_id=session_id,
+            full_name=data.get("full_name"),
+            messages=data.get("messages", []),
+            model_context=data.get("model_context"),
+            created_at=data.get("created_at", datetime.utcnow().isoformat())  # <-- Guardar fecha si se provee, si no la actual
         )
         conv.save()
