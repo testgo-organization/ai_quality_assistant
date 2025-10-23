@@ -10,3 +10,10 @@ async def get_history(session_id: str, user=Depends(get_current_user)):
     if not history:
         raise HTTPException(status_code=404, detail="Historial no encontrado")
     return {"session_id": session_id, "history": history}
+
+async def put_history(session_id: str, data: dict, user=Depends(get_current_user)):
+    """
+    Actualizar o crear historial de conversación (PUT)
+    """
+    put_conversation_history(user["user_id"], session_id, data)
+    return {"message": "Historial actualizado", "session_id": session_id}

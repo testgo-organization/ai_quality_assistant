@@ -161,6 +161,6 @@ def put_conversation_history(user_id: str, session_id: str, data: dict):
             full_name=data.get("full_name"),
             messages=data.get("messages", []),
             model_context=data.get("model_context"),
-            created_at=data.get("created_at", datetime.utcnow().isoformat())  # <-- Guardar fecha si se provee, si no la actual
+            created_at=data.get("created_at", datetime.utcnow().isoformat())
         )
         conv.save()
